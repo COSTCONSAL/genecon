@@ -232,6 +232,19 @@ tr:hover td{background:var(--accent-bg2);}
 /* ── FOOTER ── */
 .footer{text-align:center;font-size:11px;color:var(--text4);padding:24px 0 36px;letter-spacing:.02em;}
 
+/* ── PASSWORD SCREEN ── */
+#pw-screen{position:fixed;inset:0;background:#f5f5f7;z-index:9999;display:flex;align-items:center;justify-content:center;}
+.pw-box{background:#fff;border-radius:20px;padding:40px 36px;max-width:380px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.12);border:1px solid var(--border2);text-align:center;}
+.pw-logo{width:52px;height:52px;background:#1d1d1f;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.pw-logo svg{fill:#fff;width:26px;height:26px;}
+.pw-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.02em;}
+.pw-sub{font-size:13px;color:var(--text3);margin-bottom:24px;line-height:1.6;}
+.pw-input{width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;font-family:inherit;text-align:center;letter-spacing:.12em;margin-bottom:12px;transition:border-color .15s,box-shadow .15s;}
+.pw-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12);}
+.pw-btn{width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all .15s;}
+.pw-btn:hover{background:var(--accent-h);}
+.pw-err{font-size:12px;color:var(--red);margin-top:8px;min-height:18px;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .hero{padding:28px 16px 0;}
@@ -245,6 +258,21 @@ tr:hover td{background:var(--accent-bg2);}
 </style>
 </head>
 <body>
+
+<!-- ══ PASSWORD SCREEN ══ -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-logo">
+      <svg viewBox="0 0 16 16"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1.5V4.5A3.5 3.5 0 0 0 8 1zm-2 3.5a2 2 0 1 1 4 0V6H6V4.5zM8 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+    </div>
+    <div class="pw-title">ゼネコン逼迫状況 検索エンジン</div>
+    <div class="pw-sub">このツールは社内限定です。<br>パスワードを入力してください。</div>
+    <input class="pw-input" id="pw-input" type="password" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <button class="pw-btn" onclick="checkPassword()">ログイン</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
 
 <!-- ══ NAVBAR ══ -->
 <nav class="navbar">
@@ -328,7 +356,7 @@ tr:hover td{background:var(--accent-bg2);}
     <div>
       <div class="sp-connected-info">
         <span class="dot-s dot-green"></span>
-        SharePoint連携済み — 自動同期中
+        GitHub連携済み — 自動同期中
       </div>
       <div class="sp-url-text" id="sp-url-display"></div>
     </div>
@@ -426,10 +454,11 @@ tr:hover td{background:var(--accent-bg2);}
     <div class="modal-desc">
       <strong>全社に共有する手順：</strong><br><br>
       ①「JSONをダウンロード」をクリック<br>
-      ② ダウンロードした <code>gencon_data_日付.json</code> をSharePointにアップロード<br>
-      ③ <strong>ファイル名を <code>gencon_data.json</code> に変更して上書き保存</strong><br>
-      ④ 全員がツールを開いて「🔄 今すぐ同期」を押すと最新データが反映されます<br><br>
-      <strong style="color:var(--orange)">⚠ 毎回同じファイル名で上書き保存してください。</strong>ファイル名が変わるとURLも変わります。
+      ② GitHubの <code>gencon</code> リポジトリを開く<br>
+      ③ <code>gencon_data.json</code> をクリック → ✏️ 鉛筆アイコン → 内容を全選択して貼り付け → Commit<br>
+      　または、ファイルをドラッグ&ドロップでアップロード（同じファイル名 <code>gencon_data.json</code> で上書き）<br><br>
+      ④ 全員が「🔄 今すぐ同期」を押すと最新データが反映されます<br><br>
+      <strong style="color:var(--orange)">⚠ ファイル名は必ず <code>gencon_data.json</code> のまま上書きしてください。</strong>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="doExportJSON()">📥 JSONをダウンロード</button>
@@ -471,7 +500,7 @@ tr:hover td{background:var(--accent-bg2);}
 ══════════════════════════════════════ */
 
 // ▼▼▼ SharePointのURLをここに事前設定できます（設定すると全員が自動連携されます）▼▼▼
-const PRESET_SP_URL = "https://o365mec.sharepoint.com/sites/msteams_d5c990/_layouts/15/download.aspx?UniqueId=9ee88c37542e4b219dbb78ffe3ee084b&e=B0lNwZ";
+const PRESET_SP_URL = "https://raw.githubusercontent.com/costconsal/gencon/main/gencon_data.json";
 // ▲▲▲ 例: "https://yourcompany.sharepoint.com/sites/.../gencon_data.json" ▲▲▲
 
 const BUSY = {
@@ -789,7 +818,7 @@ function handleImport(input){
 }
 function mergeData(entries){
   let a=0,u=0; entries.forEach(e=>{const i=DB.findIndex(d=>d.会社名===e.会社名);i>=0?(DB[i]={...DB[i],...e},u++):(DB.push(e),a++);});
-  saveLocal(); notify(`インポート完了：新規 ${a}社 追加、${u}社 更新 — 「💾 書き出し」でSharePointに反映してください`,"ok",7000); renderCurrentTab();
+  saveLocal(); notify(`インポート完了：新規 ${a}社 追加、${u}社 更新 — 「💾 書き出し」でGitHubに反映してください`,"ok",7000); renderCurrentTab();
 }
 function parseExcel(rows){
   let hi=-1; for(let i=0;i<Math.min(5,rows.length);i++){if(rows[i]?.some(c=>c&&String(c).includes("会社名"))){hi=i;break;}}
@@ -990,7 +1019,7 @@ function doExportJSON(){
   const u=URL.createObjectURL(b),a=document.createElement("a");
   a.href=u;a.download="gencon_data_"+new Date().toISOString().slice(0,10).replace(/-/g,"")+".json";
   a.click();URL.revokeObjectURL(u);
-  notify("ダウンロードしました。SharePointに「gencon_data.json」として上書き保存してください。","ok",7000);
+  notify("ダウンロードしました。GitHubの gencon_data.json を上書きして全員に反映してください。","ok",7000);
 }
 function resetData(){
   if(!confirm("全データを削除して空の状態にリセットしますか？\nこの操作は元に戻せません。")) return;
@@ -1010,8 +1039,50 @@ let _nt={}; function notify(msg,type,dur=5000){
 }
 
 /* ══════════════════════════════════════
+   PASSWORD
+══════════════════════════════════════ */
+// ▼▼▼ パスワードをここで設定してください ▼▼▼
+const APP_PASSWORD = "mec2026";
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+const LS_AUTH = "gencon_auth_v1";
+
+function checkPassword(){
+  const val = document.getElementById("pw-input").value;
+  const err = document.getElementById("pw-err");
+  if(val === APP_PASSWORD){
+    // Store session auth (sessionStorage clears on tab close)
+    sessionStorage.setItem(LS_AUTH,"1");
+    document.getElementById("pw-screen").style.display="none";
+    err.textContent="";
+  } else {
+    err.textContent="パスワードが違います。";
+    document.getElementById("pw-input").value="";
+    document.getElementById("pw-input").focus();
+    // Shake animation
+    const box=document.querySelector(".pw-box");
+    box.style.animation="shake .4s";
+    setTimeout(()=>box.style.animation="",400);
+  }
+}
+
+function initAuth(){
+  // Add shake keyframe
+  const st=document.createElement("style");
+  st.textContent="@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}";
+  document.head.appendChild(st);
+
+  if(sessionStorage.getItem(LS_AUTH)==="1"){
+    document.getElementById("pw-screen").style.display="none";
+  } else {
+    setTimeout(()=>document.getElementById("pw-input").focus(),100);
+  }
+}
+
+/* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
+initAuth();
 loadLocal();
 initSpUI();
 renderSearch();
