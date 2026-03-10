@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゼネコン逼迫状況 検索エンジン</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f5f5f7;
+  --bg2:       #ffffff;
+  --bg3:       #fbfbfd;
+  --surface:   #ffffff;
+  --border:    #d2d2d7;
+  --border2:   #e8e8ed;
+  --text:      #1d1d1f;
+  --text2:     #424245;
+  --text3:     #6e6e73;
+  --text4:     #a1a1a6;
+  --accent:    #0071e3;
+  --accent-h:  #0077ed;
+  --accent-bg: #e8f1fb;
+  --accent-bg2:#f0f7ff;
+  --green:     #1d8348;
+  --green-bg:  #eaf6ef;
+  --red:       #c0392b;
+  --red-bg:    #fdf0ef;
+  --orange:    #b45309;
+  --orange-bg: #fef8ee;
+  --radius:    12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow:    0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+body{font-family:'Noto Sans JP','DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── NAV BAR ── */
+.navbar{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid rgba(0,0,0,.08);
+  position:sticky;top:0;z-index:100;
+  padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:52px;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-logo{width:28px;height:28px;background:var(--text);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.nav-logo svg{fill:#fff;width:16px;height:16px;}
+.nav-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.02em;}
+.nav-actions{display:flex;gap:8px;align-items:center;}
+.nav-status{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;margin-right:8px;}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500;}
+.sp-ok   {background:var(--green-bg); color:var(--green);}
+.sp-local{background:var(--accent-bg);color:var(--accent);}
+.sp-err  {background:var(--red-bg);   color:var(--red);}
+.dot-s{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dot-green {background:var(--green); animation:glow-g 2s infinite;}
+.dot-blue  {background:var(--accent);}
+.dot-red   {background:var(--red);}
+@keyframes glow-g{0%,100%{box-shadow:0 0 0 0 rgba(29,131,72,.4)}50%{box-shadow:0 0 0 4px rgba(29,131,72,0)}}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;border:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:-.01em;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-h);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,113,227,.3);}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+.btn-secondary:hover{background:var(--bg);border-color:var(--text4);}
+.btn-ghost{background:none;color:var(--text3);border:none;padding:6px 12px;}
+.btn-ghost:hover{color:var(--text);background:var(--bg);}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:7px;}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,57,43,.2);}
+.btn-danger:hover{background:#f9e8e6;}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(160deg, #ffffff 0%, #f0f7ff 50%, #f5f5f7 100%);
+  border-bottom:1px solid var(--border2);
+  padding:40px 28px 0;
+}
+.hero-inner{max-width:960px;margin:0 auto;}
+.hero-eyebrow{font-size:11px;font-weight:500;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+.hero-title{font-family:'DM Sans','Noto Sans JP',sans-serif;font-size:38px;font-weight:700;color:var(--text);line-height:1.1;letter-spacing:-.03em;margin-bottom:8px;}
+.hero-title span{color:var(--accent);}
+.hero-sub{font-size:14px;color:var(--text3);font-weight:300;margin-bottom:24px;line-height:1.6;}
+.hero-stats{display:flex;gap:24px;margin-bottom:0;flex-wrap:wrap;}
+.stat-item{display:flex;align-items:center;gap:8px;}
+.stat-num{font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.03em;}
+.stat-lbl{font-size:11px;color:var(--text3);line-height:1.3;}
+.stat-div{width:1px;height:32px;background:var(--border2);}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:0;border-top:1px solid var(--border2);margin-top:20px;}
+.tab{padding:12px 20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;font-family:inherit;letter-spacing:-.01em;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.tab:hover:not(.active){color:var(--text2);}
+
+/* ── BODY ── */
+.body{padding:24px 28px;max-width:960px;margin:0 auto;}
+
+/* ── SP BANNER ── */
+.sp-banner{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+.sp-banner-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.sp-banner-icon{width:32px;height:32px;background:var(--accent-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.sp-banner-title{font-size:14px;font-weight:700;color:var(--text);}
+.sp-banner-desc{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:14px;margin-left:42px;}
+.sp-banner-desc strong{color:var(--text2);}
+.sp-input-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:42px;}
+.sp-input{flex:1;min-width:220px;padding:9px 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+.sp-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12);}
+.sp-input::placeholder{color:var(--text4);}
+.sp-hint{font-size:11px;margin-top:6px;margin-left:42px;}
+.sp-connected-bar{background:var(--green-bg);border:1px solid rgba(29,131,72,.2);border-radius:var(--radius-lg);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.sp-connected-info{font-size:13px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:8px;}
+.sp-url-text{font-size:11px;color:var(--text3);margin-top:2px;word-break:break-all;}
+
+/* ── SEARCH PANEL ── */
+.search-panel{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:22px 24px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+.search-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.field-label{font-size:11px;color:var(--text3);display:block;margin-bottom:7px;font-weight:500;letter-spacing:.01em;}
+select{width:100%;padding:10px 14px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;appearance:auto;transition:border-color .15s;}
+select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.1);}
+.result-row{margin-top:16px;padding:12px 16px;background:var(--accent-bg2);border-radius:10px;border:1px solid rgba(0,113,227,.12);display:flex;align-items:center;justify-content:space-between;}
+.result-label{font-size:12px;color:var(--accent);font-weight:500;}
+.result-count{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;color:var(--accent);line-height:1;margin-right:4px;}
+
+/* ── CARDS ── */
+.cards-grid{display:flex;flex-direction:column;gap:10px;}
+.card{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:18px 22px;cursor:pointer;transition:all .2s;display:grid;grid-template-columns:1fr auto;gap:14px;box-shadow:var(--shadow-sm);}
+.card:hover{border-color:var(--accent);box-shadow:var(--shadow), 0 0 0 1px var(--accent);transform:translateY(-1px);}
+.card-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:7px;letter-spacing:-.02em;}
+.card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.tag{font-size:11px;padding:3px 9px;border-radius:6px;background:var(--bg);color:var(--text3);border:1px solid var(--border2);font-weight:500;}
+.tag-g{background:var(--green-bg);color:var(--green);border-color:rgba(29,131,72,.2);}
+.card-info{font-size:12px;color:var(--text3);line-height:1.8;}
+.card-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;min-width:80px;}
+.mini-bar{width:72px;background:var(--bg);border-radius:99px;height:4px;overflow:hidden;border:1px solid var(--border2);}
+.arr{font-size:12px;color:var(--accent);font-weight:600;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:3px;border-radius:6px;padding:3px 9px;font-weight:600;font-size:11px;white-space:nowrap;border:1px solid;}
+.badge-lg{padding:5px 13px;font-size:13px;border-radius:8px;}
+.b1{background:#eaf6ef;color:#1d8348;border-color:rgba(29,131,72,.25);}
+.b2{background:#f0fbe8;color:#4a7c2f;border-color:rgba(74,124,47,.25);}
+.b3{background:#fef9e7;color:#b45309;border-color:rgba(180,83,9,.25);}
+.b4{background:#fef3e2;color:#c0582b;border-color:rgba(192,88,43,.25);}
+.b5{background:#fef0ef;color:#c0392b;border-color:rgba(192,57,43,.25);}
+
+/* ── MATRIX ── */
+.matrix-wrap{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:24px;overflow-x:auto;box-shadow:var(--shadow-sm);}
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:8px 10px;text-align:center;color:var(--text4);font-weight:600;font-size:10px;letter-spacing:.06em;border-bottom:1px solid var(--border2);}
+th:first-child{text-align:left;}
+td{padding:9px 8px;border-bottom:1px solid var(--border2);text-align:center;}
+td:first-child{text-align:left;padding:9px 12px;color:var(--text);font-weight:600;cursor:pointer;font-size:13px;}
+td:first-child:hover{color:var(--accent);}
+td:last-child{text-align:left;color:var(--text3);font-size:11px;padding:9px 12px;}
+tr:hover td{background:var(--accent-bg2);}
+
+/* ── DETAIL ── */
+.detail-wrap{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:32px;box-shadow:var(--shadow);}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border2);gap:12px;flex-wrap:wrap;}
+.detail-name{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.03em;}
+.detail-date{font-size:12px;color:var(--text3);margin-top:4px;}
+.sec{margin-bottom:26px;}
+.sec-title{font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2);}
+.row{display:flex;gap:12px;margin-bottom:8px;font-size:13px;}
+.row-lbl{color:var(--text3);min-width:148px;flex-shrink:0;font-size:12px;line-height:1.6;font-weight:400;}
+.row-val{color:var(--text2);font-weight:500;line-height:1.6;}
+.year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+.year-cell{text-align:center;}
+.year-num{font-size:10px;color:var(--text4);margin-bottom:5px;font-weight:500;}
+.chip{display:inline-flex;align-items:center;padding:4px 11px;border-radius:6px;font-size:12px;font-weight:500;margin:2px;border:1px solid;}
+.chip-on{background:var(--accent-bg);color:var(--accent);border-color:rgba(0,113,227,.2);}
+.chip-off{background:var(--bg);color:var(--text4);border-color:var(--border2);}
+.warn-box{margin-bottom:12px;padding:10px 14px;background:var(--red-bg);border:1px solid rgba(192,57,43,.2);border-radius:10px;font-size:12px;color:var(--red);line-height:1.7;display:flex;gap:8px;}
+.note-box{font-size:12px;color:var(--text3);background:var(--bg3);border-radius:10px;padding:12px 14px;line-height:1.8;margin-top:10px;border:1px solid var(--border2);}
+
+/* ── NOTICES ── */
+.notice{padding:11px 16px;border-radius:10px;font-size:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:500;}
+.n-ok  {background:var(--green-bg);border:1px solid rgba(29,131,72,.2);color:var(--green);}
+.n-err {background:var(--red-bg);border:1px solid rgba(192,57,43,.2);color:var(--red);}
+.n-info{background:var(--accent-bg);border:1px solid rgba(0,113,227,.15);color:var(--accent);}
+.n-warn{background:var(--orange-bg);border:1px solid rgba(180,83,9,.2);color:var(--orange);}
+.notice button{background:none;border:none;cursor:pointer;color:inherit;font-size:15px;flex-shrink:0;opacity:.6;}
+.notice button:hover{opacity:1;}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.modal{background:var(--surface);border-radius:20px;padding:30px;max-width:500px;width:92%;box-shadow:var(--shadow-lg);border:1px solid var(--border2);}
+.modal-title{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.02em;}
+.modal-desc{font-size:13px;color:var(--text3);line-height:1.8;margin-bottom:20px;}
+.modal-desc strong{color:var(--text2);font-weight:600;}
+.modal-desc code{background:var(--bg);padding:1px 6px;border-radius:4px;font-size:11px;border:1px solid var(--border2);}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.loading-ring{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 0;}
+.empty-icon{font-size:52px;margin-bottom:14px;opacity:.3;}
+.empty-text{font-size:14px;color:var(--text4);}
+
+/* ── EDIT/DELETE ── */
+.card-actions{display:flex;gap:6px;margin-top:10px;}
+.btn-icon{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:4px;}
+.btn-edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(0,113,227,.2);}
+.btn-edit:hover{background:#dbeafe;border-color:var(--accent);}
+.btn-del{background:var(--red-bg);color:var(--red);border-color:rgba(192,57,43,.18);}
+.btn-del:hover{background:#fce8e6;}
+.edit-form{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--accent);padding:24px;margin-bottom:12px;box-shadow:var(--shadow);}
+.edit-form-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.edit-field label{font-size:10px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
+.edit-field input,.edit-field select,.edit-field textarea{width:100%;padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;}
+.edit-field input:focus,.edit-field select:focus,.edit-field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.1);}
+.edit-field textarea{resize:vertical;min-height:60px;}
+.edit-field-full{grid-column:1/-1;}
+.edit-section-label{grid-column:1/-1;font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.1em;padding-top:8px;border-top:1px solid var(--border2);margin-top:4px;}
+.busy-row{display:flex;gap:6px;flex-wrap:wrap;}
+.busy-select{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.busy-select label{font-size:9px;color:var(--text4);font-weight:600;}
+.busy-select select{width:52px;padding:5px 3px;font-size:11px;text-align:center;}
+
+/* ── FOOTER ── */
+.footer{text-align:center;font-size:11px;color:var(--text4);padding:24px 0 36px;letter-spacing:.02em;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .hero{padding:28px 16px 0;}
+  .body{padding:16px;}
+  .navbar{padding:0 16px;}
+  .search-grid{grid-template-columns:1fr;}
+  .year-grid{grid-template-columns:repeat(4,1fr);}
+  .hero-title{font-size:26px;}
+  .nav-title{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg viewBox="0 0 16 16"><path d="M2 3h12v1.5H2zm0 4h12v1.5H2zm0 4h8v1.5H2z"/></svg>
+    </div>
+    <span class="nav-title">ゼネコン逼迫状況 検索エンジン</span>
+  </div>
+  <div class="nav-actions">
+    <div class="nav-status" id="sync-status-nav"></div>
+    <button class="btn btn-secondary btn-sm" onclick="showModal('modal-import')">📥 インポート</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportJSON()">💾 書き出し</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportExcel()">📊 Excel出力</button>
+    <button class="btn btn-ghost btn-sm" onclick="showModal('modal-help')">❓</button>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">General Contractor Intelligence Platform</div>
+    <h1 class="hero-title">ゼネコン<span>逼迫状況</span><br>検索エンジン</h1>
+    <p class="hero-sub">年度・繁忙度・規模・用途から、最適なゼネコンをすぐに見つける</p>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div>
+          <div class="stat-num" id="stat-companies">—</div>
+          <div class="stat-lbl">登録社数</div>
+        </div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item">
+        <div>
+          <div class="stat-num">2026〜32</div>
+          <div class="stat-lbl">対応年度</div>
+        </div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item" id="stat-sync-item">
+        <div>
+          <div id="stat-sync" class="stat-num" style="font-size:14px;color:var(--text3)">—</div>
+          <div class="stat-lbl">データ状態</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" id="tab-btn-search" onclick="switchTab('search',this)">🔍 条件検索</button>
+      <button class="tab" id="tab-btn-matrix" onclick="switchTab('matrix',this)">📊 繁忙度マトリクス</button>
+      <button class="tab" id="tab-btn-list" onclick="switchTab('list',this)">📋 全社一覧</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BODY ══ -->
+<div class="body">
+  <div id="notice-area"></div>
+
+  <!-- SharePoint設定バナー -->
+  <div id="sp-setup-banner" style="display:none" class="sp-banner">
+    <div class="sp-banner-head">
+      <div class="sp-banner-icon">🔗</div>
+      <div class="sp-banner-title">SharePoint連携を設定する（初回のみ）</div>
+    </div>
+    <div class="sp-banner-desc">
+      SharePoint上の <strong>gencon_data.json</strong> のURLを設定すると、全員が常に最新データを参照できます。<br>
+      <strong>取得方法：</strong> SharePointでファイルを右クリック →「リンクのコピー」
+    </div>
+    <div class="sp-input-row">
+      <input class="sp-input" id="sp-url-input" type="url"
+        placeholder="https://yourcompany.sharepoint.com/sites/…/gencon_data.json"
+        oninput="validateSpUrl(this.value)">
+      <button class="btn btn-primary" onclick="saveSpUrl()">連携を設定</button>
+      <button class="btn btn-ghost btn-sm" onclick="dismissSpBanner()">後で</button>
+    </div>
+    <div id="sp-url-hint" class="sp-hint"></div>
+  </div>
+
+  <!-- SharePoint接続済みバー -->
+  <div id="sp-connected-bar" style="display:none" class="sp-connected-bar">
+    <div>
+      <div class="sp-connected-info">
+        <span class="dot-s dot-green"></span>
+        SharePoint連携済み — 自動同期中
+      </div>
+      <div class="sp-url-text" id="sp-url-display"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="syncFromSharePoint(false)">🔄 今すぐ同期</button>
+      <button class="btn btn-ghost btn-sm" onclick="editSpUrl()">✏️ URL変更</button>
+      <button class="btn btn-danger btn-sm" onclick="disconnectSp()">連携解除</button>
+    </div>
+  </div>
+
+  <!-- Search tab -->
+  <div id="pane-search">
+    <div class="search-panel">
+      <div class="search-grid">
+        <div>
+          <label class="field-label">着工希望年度</label>
+          <select id="sel-year" onchange="renderSearch()">
+            <option value="2026">2026年度</option>
+            <option value="2027">2027年度</option>
+            <option value="2028" selected>2028年度</option>
+            <option value="2029">2029年度</option>
+            <option value="2030">2030年度</option>
+            <option value="2031">2031年度</option>
+            <option value="2032">2032年度</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">繁忙度（上限）</label>
+          <select id="sel-busy" onchange="renderSearch()">
+            <option value="1">① 受注前向き のみ</option>
+            <option value="2">② 余裕有 まで</option>
+            <option value="3" selected>③ 通常 まで</option>
+            <option value="4">④ 繁忙 まで</option>
+            <option value="5">⑤ 全て表示</option>
+          </select>
+        </div>
+      </div>
+      <div class="result-row">
+        <span class="result-label" id="result-label"></span>
+        <span>
+          <span class="result-count" id="result-count">0</span>
+          <span style="font-size:13px;color:var(--text3)">社 該当</span>
+        </span>
+      </div>
+    </div>
+    <div class="cards-grid" id="search-results"></div>
+  </div>
+
+  <!-- Matrix tab -->
+  <div id="pane-matrix" style="display:none">
+    <div class="matrix-wrap">
+      <div class="section-label">年度別 繁忙度マトリクス</div>
+      <div class="legend" id="legend"></div>
+      <div id="matrix-table"></div>
+    </div>
+  </div>
+
+  <!-- List tab -->
+  <div id="pane-list" style="display:none">
+    <div class="cards-grid" id="list-cards"></div>
+  </div>
+
+  <!-- Detail pane -->
+  <div id="pane-detail" style="display:none"></div>
+</div>
+
+<div class="footer">ゼネコン逼迫状況 検索エンジン　—　SharePoint連携対応版</div>
+
+<!-- ══ IMPORT MODAL ══ -->
+<div id="modal-import" class="overlay" style="display:none" onclick="overlayClose(event,'modal-import')">
+  <div class="modal">
+    <div class="modal-title">データをインポート</div>
+    <div class="modal-desc">
+      <strong>対応ファイル：</strong><br>
+      ①「ヒアリング_データ統合.xlsx」— 複数社の統合アンケートデータ<br>
+      ② 個別ヒアリングシート .xlsx — 1社分のアンケート結果<br>
+      ③ 書き出し済みJSONファイル .json<br><br>
+      同じ会社名のデータは最新情報に自動更新されます。<br>
+      インポート後は<strong>「💾 書き出し」→ SharePointに上書き保存</strong>で全員に反映されます。
+    </div>
+    <div class="modal-actions">
+      <label class="btn btn-primary" style="cursor:pointer;flex:1;justify-content:center">
+        ファイルを選択
+        <input type="file" id="file-input" accept=".xlsx,.xls,.json" style="display:none" onchange="handleImport(this)">
+      </label>
+      <button class="btn btn-secondary" onclick="hideModal('modal-import')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EXPORT MODAL ══ -->
+<div id="modal-export" class="overlay" style="display:none" onclick="overlayClose(event,'modal-export')">
+  <div class="modal">
+    <div class="modal-title">データの書き出し・共有</div>
+    <div class="modal-desc">
+      <strong>全社に共有する手順：</strong><br><br>
+      ①「JSONをダウンロード」をクリック<br>
+      ② ダウンロードした <code>gencon_data_日付.json</code> をSharePointにアップロード<br>
+      ③ <strong>ファイル名を <code>gencon_data.json</code> に変更して上書き保存</strong><br>
+      ④ 全員がツールを開いて「🔄 今すぐ同期」を押すと最新データが反映されます<br><br>
+      <strong style="color:var(--orange)">⚠ 毎回同じファイル名で上書き保存してください。</strong>ファイル名が変わるとURLも変わります。
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="doExportJSON()">📥 JSONをダウンロード</button>
+      <button class="btn btn-secondary" onclick="hideModal('modal-export')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HELP MODAL ══ -->
+<div id="modal-help" class="overlay" style="display:none" onclick="overlayClose(event,'modal-help')">
+  <div class="modal">
+    <div class="modal-title">使い方ガイド</div>
+    <div class="modal-desc">
+      <strong>SharePoint連携の設定：</strong><br>
+      1. SharePointにJSONファイルをアップロード<br>
+      2. ファイル右クリック →「リンクのコピー」<br>
+      3. このページ上部のバナーにURLを貼り付けて「連携を設定」<br>
+      4. 以降は起動時に自動でデータを読み込みます<br><br>
+      <strong>繁忙度の意味：</strong>　◎受注前向き　○余裕有　△通常　▲繁忙　✕受注不可
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="hideModal('modal-help')">閉じる</button>
+      <button class="btn btn-danger btn-sm" onclick="resetData()">データをリセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOADING ══ -->
+<div id="modal-loading" class="overlay" style="display:none">
+  <div class="modal" style="text-align:center;padding:40px 30px">
+    <div class="loading-ring"></div>
+    <div id="loading-msg" style="font-size:13px;color:var(--text3)">読み込み中...</div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   CONSTANTS & CONFIG
+══════════════════════════════════════ */
+
+// ▼▼▼ SharePointのURLをここに事前設定できます（設定すると全員が自動連携されます）▼▼▼
+const PRESET_SP_URL = "https://o365mec.sharepoint.com/sites/msteams_d5c990/_layouts/15/download.aspx?UniqueId=9ee88c37542e4b219dbb78ffe3ee084b&e=B0lNwZ";
+// ▲▲▲ 例: "https://yourcompany.sharepoint.com/sites/.../gencon_data.json" ▲▲▲
+
+const BUSY = {
+  1:{label:"受注前向き",icon:"◎",cls:"b1",bar:"#1d8348",heat:"#eaf6ef",fg:"#1d8348"},
+  2:{label:"余裕有",    icon:"○",cls:"b2",bar:"#4a7c2f",heat:"#f0fbe8",fg:"#4a7c2f"},
+  3:{label:"通常",      icon:"△",cls:"b3",bar:"#b45309",heat:"#fef9e7",fg:"#b45309"},
+  4:{label:"繁忙",      icon:"▲",cls:"b4",bar:"#c0582b",heat:"#fef3e2",fg:"#c0582b"},
+  5:{label:"受注不可",  icon:"✕",cls:"b5",bar:"#c0392b",heat:"#fef0ef",fg:"#c0392b"},
+};
+const YEARS = [2026,2027,2028,2029,2030,2031,2032];
+const LS_DATA = "gencon_data_v4";
+const LS_SP   = "gencon_sp_url_v2";
+const LS_DISM = "gencon_sp_dismissed";
+
+/* ══════════════════════════════════════
+   INITIAL DATA
+══════════════════════════════════════ */
+const INITIAL = [];
+const SAMPLE_DATA = [
+  {会社名:"梅干し組株式会社",日付:"2026年2月5日",繁忙度:{2026:1,2027:1,2028:1,2029:1,2030:1,2031:1,2032:1},新築受注可能_第一希望:"2027年春以降",新築受注可能_第二希望:null,新築規模_工事費:"70億円程度～",新築規模_延床面積:"10,000㎡程度～",中規模_相談可否:"可能",首都圏_多い用途:"分譲住宅、倉庫、工場",積極受注_用途:"非住宅（事務所、商業ビル、倉庫、工場、ホテルなど）",積極受注_規模:"10,000㎡程度～",積極受注_金額:"50億円～",消極受注_用途:"特になし",発注_一括:true,発注_分離:false,発注_コストオン:false,発注_設計施工一括:false,設計施工一括_方針:"賃貸・分譲住宅は設計施工一括での発注をお願いしており、非住宅物件は設計施工一括or分離は問いません。",価格上昇_工種資材:"建築各工種労務費、建築部材全般に緩やかに上昇基調。設備はケーブル価格は上昇継続。消火設備、自動制御設備工事は労務逼迫が継続のため、価格が下がらない",納期難_材料製品:"現状、特定の材料の納期が特に厳しい状況はありません。設備は基本的に通常納期に戻っている",労務_逼迫状況:"2027年以降社員は逼迫している。協力会社も2027年度以降は多忙と聞いている。",逼迫工種:"建築関係は全工種に渡り、設備は消火設備、自動制御設備",工期_変動見解:"労務不足、資機材納期が見通せない状況があるため注視が必要である",首都圏割合_売上額:"144,365百万円",首都圏割合_売上率:"51.5%",首都圏割合_社員数:"782人",海外戦略:"東南アジアおよびインド、アフリカまで進出。今後も海外売上比率は拡大する方針",自由記載:null},
+  {会社名:"株式会社おかか組",日付:null,繁忙度:{2026:5,2027:4,2028:2,2029:1,2030:1,2031:1,2032:1},新築受注可能_第一希望:"2027年12月以降",新築受注可能_第二希望:"2028年4月以降",新築規模_工事費:"50～300億円程度",新築規模_延床面積:"7,000～40,000㎡程度",中規模_相談可否:"可能",首都圏_多い用途:"物流倉庫、生産工場",積極受注_用途:"事務所ビル（中高層ビル）",積極受注_規模:"20,000㎡程度",積極受注_金額:"150～200億",消極受注_用途:"—",発注_一括:true,発注_分離:true,発注_コストオン:true,発注_設計施工一括:false,設計施工一括_方針:"設計実績を積みたい案件では、基本設計または実施設計からの関与をお願いする場合がございます。",価格上昇_工種資材:"労務費が全工種上昇。非鉄金属（銅・アルミ）と電線・ケーブルが約10%/3ヶ月上昇。",納期難_材料製品:"照明器具LEDベースライト従来1か月以内が6か月程度、高圧変圧器8か月程度。",労務_逼迫状況:"元請社員は若干逼迫傾向。電気・機械設備協力会社は27/28年度大型工事の新規案件確保が難しい状況。",逼迫工種:"消火設備専門工事、自動制御専門会社は引き続き工事量過多による労務逼迫",工期_変動見解:"全ての案件において４週８閉所をベースに工期設定",首都圏割合_売上額:"1,500～1,800億",首都圏割合_売上率:"45%程度",首都圏割合_社員数:"250～300人(現場配置職員数)",海外戦略:"海外売上比率５％程度。低コスト製品の積極採用（鉄骨、ガラス、金属製品など）",自由記載:null},
+  {会社名:"株式会社ツナ建設",日付:"2026年2月13日",繁忙度:{2026:4,2027:4,2028:2,2029:1,2030:1,2031:1,2032:1},新築受注可能_第一希望:"2028年4月以降",新築受注可能_第二希望:null,新築規模_工事費:"50億円程度",新築規模_延床面積:"10,000㎡程度",中規模_相談可否:"可能",首都圏_多い用途:"ミッドサイズオフィス、タワーマンション、物流",積極受注_用途:"オフィス、冷凍冷蔵、DCなど",積極受注_規模:"10,000㎡程度",積極受注_金額:"—",消極受注_用途:"—",発注_一括:true,発注_分離:false,発注_コストオン:true,発注_設計施工一括:false,設計施工一括_方針:"分離、一括とも対応可能です。",価格上昇_工種資材:"労務費、資材とも全般的に上昇傾向です。",納期難_材料製品:"エレベーター",労務_逼迫状況:"山積みを丁寧に確認をしながら進めています。",逼迫工種:"消火設備、生コン、銅製品全般（冷媒、ケーブルなど）、サブコン",工期_変動見解:"4週8閉所に加え、祝日・長期休暇・夏場の作業効率低下を見込み工期は長くなる傾向",首都圏割合_売上額:"—",首都圏割合_売上率:"—",首都圏割合_社員数:"—",海外戦略:"—",自由記載:null},
+  {会社名:"鳥五目工業株式会社",日付:"2026年2月13日",繁忙度:{2026:5,2027:5,2028:4,2029:3,2030:1,2031:1,2032:1},新築受注可能_第一希望:"2029年4月以降（マンション案件）",新築受注可能_第二希望:"2028年4月以降（ホテル・事務所・物流施設）",新築規模_工事費:"マンション・事務所・ホテル：20～80億円 / 物流施設：30～100億超",新築規模_延床面積:"3,000～5,000㎡（マンション等）/ 7,000～30,000㎡（物流）",中規模_相談可否:"可能",首都圏_多い用途:"分譲マンション、物流倉庫、防衛施設、PFI給食センター",積極受注_用途:"事務所ビル・ホテル・Lab・分譲マンション",積極受注_規模:"3,000～5,000㎡程度",積極受注_金額:"20～50億程度",消極受注_用途:"用途は特になし（規模・金額による）",発注_一括:true,発注_分離:false,発注_コストオン:true,発注_設計施工一括:false,設計施工一括_方針:"物流施設・事務所・ホテルは設計施工一括を希望。分譲マンションは分離発注を希望。",価格上昇_工種資材:"全工種平均20％以上UP",納期難_材料製品:"長尺塩ビシート、既製コンクリート杭、受変電設備、高圧・低圧ケーブル、空調機、ポンプ、冷凍冷蔵設備、エレベーター等",労務_逼迫状況:"協力会社の労務状況は注視が続く。小中規模のRC造であれば比較的労務確保は可能。大規模案件は要注意。",逼迫工種:"左官工、断熱発砲ウレタン工の労務は逼迫。各工種平均20UP。",工期_変動見解:"上棟から引渡しまで7ヶ月確保する方針有。生コン打設時間の制限など現場への影響は大きい。",首都圏割合_売上額:"600億円（建築）",首都圏割合_売上率:"60%程度",首都圏割合_社員数:"連結2,052名(単独1,772名)",海外戦略:"物流施設では外装パネルを国内から海外製品に代替するなど案件ごとに検証。",自由記載:null},
+  {会社名:"株式会社昆布工務店",日付:"2026年2月5日",繁忙度:{2026:4,2027:4,2028:1,2029:1,2030:1,2031:1,2032:1},新築受注可能_第一希望:"2028年4月以降",新築受注可能_第二希望:"2028年1月以降",新築規模_工事費:"20～80億円程度",新築規模_延床面積:"5,000～20,000㎡程度",中規模_相談可否:"可能",首都圏_多い用途:"物流、工場、オフィス、ホテル、マンション",積極受注_用途:"物流、工場、オフィス、ホテル",積極受注_規模:"5,000～10,000㎡程度",積極受注_金額:"30～80億円程度",消極受注_用途:"マンション",発注_一括:true,発注_分離:true,発注_コストオン:true,発注_設計施工一括:false,設計施工一括_方針:"案件の内容、設計の時期、施工の時期、弊社の既予定次第になります。",価格上昇_工種資材:"特に設備サブコンと一部の仕上げ資材で上昇及び今後の上昇予定が見受けられます。",納期難_材料製品:"以前に比べ、概ね改善してきています。",労務_逼迫状況:"弊社、サブコン共に現場代理人が特に不足しています。",逼迫工種:"設備全般。特に電気工事関係が高騰しています。",工期_変動見解:"長時間労働の規制が厳格化してきていること、専門工事業者の労務確保のため、短工期物件の対応が困難になっています。",首都圏割合_売上額:"約769億円（内建築約87％）",首都圏割合_売上率:"49.6%",首都圏割合_社員数:"1796名",海外戦略:"海外技能労働者は多くなってきています。",自由記載:null},
+];
+
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+let DB = [], currentTab = "search", prevTab = "search";
+
+/* ══════════════════════════════════════
+   STORAGE
+══════════════════════════════════════ */
+function loadLocal(){
+  try{
+    const r=localStorage.getItem(LS_DATA);
+    if(r){ DB=JSON.parse(r); }
+    else {
+      DB=[];
+      saveLocal();
+      // First run: offer to load sample data
+      setTimeout(()=>{
+        if(confirm("サンプルデータ（5社）を読み込みますか？\n「いいえ」を選ぶと空の状態から始まります。")){
+          DB=JSON.parse(JSON.stringify(SAMPLE_DATA));
+          saveLocal();
+          renderCurrentTab();
+          notify("サンプルデータ（5社）を読み込みました。不要な場合は「全社一覧」タブで削除できます。","info",8000);
+        }
+      },400);
+    }
+  }catch(e){ DB=[]; }
+}
+function saveLocal(){ try{localStorage.setItem(LS_DATA,JSON.stringify(DB));}catch(e){} updateStats(); }
+function updateStats(){
+  document.getElementById("stat-companies").textContent = DB.length;
+}
+
+/* ══════════════════════════════════════
+   SHAREPOINT
+══════════════════════════════════════ */
+function getSpUrl(){ return localStorage.getItem(LS_SP) || PRESET_SP_URL || ""; }
+
+function setSyncUI(state){
+  const nav = document.getElementById("sync-status-nav");
+  const stat = document.getElementById("stat-sync");
+  const map = {
+    ok:      {pill:'sp-ok',   dot:'dot-green', nav:'SharePoint同期済み',   stat:'同期済み'},
+    local:   {pill:'sp-local',dot:'dot-blue',  nav:'ローカルデータ使用中', stat:'ローカル'},
+    error:   {pill:'sp-err',  dot:'dot-red',   nav:'接続エラー',           stat:'接続エラー'},
+    loading: {pill:'sp-local',dot:'dot-blue',  nav:'同期中...',            stat:'同期中...'},
+  };
+  const m = map[state]||map.local;
+  nav.innerHTML = `<span class="status-pill ${m.pill}"><span class="dot-s ${m.dot}"></span>${m.nav}</span>`;
+  stat.textContent = m.stat;
+  stat.style.color = state==='ok' ? 'var(--green)' : state==='error' ? 'var(--red)' : 'var(--text3)';
+}
+
+async function syncFromSharePoint(silent){
+  const url = getSpUrl();
+  if(!url){ setSyncUI("local"); return false; }
+  if(!silent) showLoading("SharePointからデータを読み込み中...");
+  setSyncUI("loading");
+  try{
+    const res = await fetch(url.includes("?")?url+"&_="+Date.now():url+"?_="+Date.now(), {mode:"cors",credentials:"include"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const json = await res.json();
+    if(!Array.isArray(json)) throw new Error("Invalid format");
+    DB = json; saveLocal(); setSyncUI("ok");
+    if(!silent){ hideLoading(); notify("SharePointからデータを読み込みました（"+DB.length+"社）","ok"); }
+    renderCurrentTab(); return true;
+  }catch(e){
+    setSyncUI("error");
+    if(!silent){ hideLoading(); notify("SharePointへの接続に失敗しました。ローカルデータを表示しています。（"+e.message+"）","err",8000); }
+    return false;
+  }
+}
+
+function initSpUI(){
+  const url = getSpUrl();
+  const dismissed = localStorage.getItem(LS_DISM);
+  if(url){
+    document.getElementById("sp-setup-banner").style.display = "none";
+    document.getElementById("sp-connected-bar").style.display = "";
+    const disp = document.getElementById("sp-url-display");
+    disp.textContent = url.length>80 ? url.slice(0,80)+"…" : url;
+    syncFromSharePoint(true);
+  } else {
+    document.getElementById("sp-connected-bar").style.display = "none";
+    if(!dismissed) document.getElementById("sp-setup-banner").style.display = "";
+    setSyncUI("local");
+  }
+}
+
+function validateSpUrl(val){
+  const h = document.getElementById("sp-url-hint");
+  if(!val){h.textContent="";return;}
+  if(!val.startsWith("https://")){ h.style.color="var(--red)"; h.textContent="⚠ URLはhttps://で始まる必要があります"; }
+  else if(!val.includes(".sharepoint.com")){ h.style.color="var(--orange)"; h.textContent="△ SharePointのURLでない可能性があります"; }
+  else{ h.style.color="var(--green)"; h.textContent="✓ SharePointのURLを確認しました"; }
+}
+function saveSpUrl(){
+  const url = document.getElementById("sp-url-input").value.trim();
+  if(!url||!url.startsWith("https://")){ notify("正しいURLを入力してください","err"); return; }
+  localStorage.setItem(LS_SP,url); initSpUI();
+}
+function dismissSpBanner(){ localStorage.setItem(LS_DISM,"1"); document.getElementById("sp-setup-banner").style.display="none"; }
+function editSpUrl(){
+  document.getElementById("sp-url-input").value = getSpUrl();
+  document.getElementById("sp-connected-bar").style.display = "none";
+  document.getElementById("sp-setup-banner").style.display = "";
+  localStorage.removeItem(LS_DISM);
+}
+function disconnectSp(){
+  if(!confirm("SharePoint連携を解除しますか？")) return;
+  localStorage.removeItem(LS_SP);
+  document.getElementById("sp-connected-bar").style.display = "none";
+  document.getElementById("sp-setup-banner").style.display = "";
+  localStorage.removeItem(LS_DISM);
+  setSyncUI("local");
+  notify("SharePoint連携を解除しました","info");
+}
+
+/* ══════════════════════════════════════
+   TABS
+══════════════════════════════════════ */
+function switchTab(name,el){
+  prevTab = currentTab; currentTab = name;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  if(el) el.classList.add("active");
+  ["search","matrix","list","detail"].forEach(t=>
+    document.getElementById("pane-"+t).style.display = t===name?"":"none");
+  if(name==="search") renderSearch();
+  if(name==="matrix") renderMatrix();
+  if(name==="list")   renderList();
+}
+function renderCurrentTab(){
+  if(currentTab==="search") renderSearch();
+  if(currentTab==="matrix") renderMatrix();
+  if(currentTab==="list")   renderList();
+}
+
+/* ══════════════════════════════════════
+   HELPERS
+══════════════════════════════════════ */
+const esc=s=>s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const badge=(l,lg)=>{if(!l||!BUSY[l])return`<span style="color:var(--text4);font-size:11px">—</span>`;const b=BUSY[l];return`<span class="badge ${b.cls}${lg?" badge-lg":""}">${b.icon} ${b.label}</span>`;};
+const miniBar=l=>{const w=(l||5)*20,c=BUSY[l||5]?.bar||"#c0392b";return`<div class="mini-bar"><div style="width:${w}%;background:${c};height:100%;border-radius:99px"></div></div>`;};
+
+/* ══════════════════════════════════════
+   SEARCH
+══════════════════════════════════════ */
+function renderSearch(){
+  const yr=parseInt(document.getElementById("sel-year").value);
+  const mb=parseInt(document.getElementById("sel-busy").value);
+  const f=DB.filter(c=>(c.繁忙度[yr]||5)<=mb);
+  document.getElementById("result-label").textContent=`${yr}年度 ／ 「${BUSY[mb].label}」以下`;
+  document.getElementById("result-count").textContent=f.length;
+  const el=document.getElementById("search-results");
+  if(!f.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🔎</div><div class="empty-text">条件に一致するゼネコンがありません</div></div>`;return;}
+  el.innerHTML=f.map(c=>{
+    const l=c.繁忙度[yr]||5;
+    const idx=DB.findIndex(d=>d.会社名===c.会社名);
+    return`<div class="card" style="display:block;padding:18px 22px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <div>
+          <div class="card-name">${esc(c.会社名)}</div>
+          <div class="card-tags" style="margin-top:6px;margin-bottom:0">
+            ${badge(l)}
+            <span class="tag">着工 ${esc(c.新築受注可能_第一希望||"要確認")}</span>
+            ${c.中規模_相談可否==="可能"?`<span class="tag tag-g">中規模 ◎</span>`:""}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <div style="text-align:right;margin-right:4px">
+            <div style="font-size:10px;color:var(--text4)">${yr}年度</div>
+            ${miniBar(l)}
+          </div>
+          <button class="btn-icon" style="background:var(--bg);border:1px solid var(--border2);color:var(--text3)" onclick="showDetail('${esc(c.会社名)}')">詳細 →</button>
+          <button class="btn-icon btn-edit" onclick="switchTab('list',document.getElementById('tab-btn-list'));setTimeout(()=>startEdit(${idx}),80)">✏️ 編集</button>
+          <button class="btn-icon btn-del" onclick="deleteCompany(${idx})">🗑 削除</button>
+        </div>
+      </div>
+      <div class="card-info">規模：${esc(c.新築規模_工事費)} ／ ${esc(c.新築規模_延床面積)}<br>積極用途：${esc(c.積極受注_用途)}</div>
+    </div>`;}).join("");
+}
+
+/* ══════════════════════════════════════
+   MATRIX
+══════════════════════════════════════ */
+function renderMatrix(){
+  document.getElementById("legend").innerHTML=Object.entries(BUSY).map(([k,v])=>`<span class="badge ${v.cls}">${v.icon} ${v.label}</span>`).join("");
+  document.getElementById("matrix-table").innerHTML=`<table>
+    <thead><tr><th style="text-align:left">会社名</th>${YEARS.map(y=>`<th>${y}</th>`).join("")}<th style="text-align:left">第一希望着工</th></tr></thead>
+    <tbody>${DB.map(c=>`<tr>
+      <td onclick="showDetail('${esc(c.会社名)}')">${esc(c.会社名)}</td>
+      ${YEARS.map(y=>{const l=c.繁忙度[y];if(!l||!BUSY[l])return`<td>—</td>`;return`<td style="background:${BUSY[l].heat};color:${BUSY[l].fg};font-weight:700">${BUSY[l].icon}</td>`;}).join("")}
+      <td>${esc(c.新築受注可能_第一希望||"—")}</td>
+    </tr>`).join("")}</tbody>
+  </table>`;
+}
+
+/* ══════════════════════════════════════
+   LIST
+══════════════════════════════════════ */
+function renderList(){
+  const el=document.getElementById("list-cards");
+  if(!DB.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">登録データがありません。Excelをインポートしてください。</div></div>`;
+    return;
+  }
+  el.innerHTML=DB.map((c,idx)=>`
+    <div class="card" style="display:block;padding:18px 22px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div>
+          <div class="card-name">${esc(c.会社名)}</div>
+          ${c.日付?`<div style="font-size:11px;color:var(--text3);margin-top:2px">ヒアリング日：${esc(c.日付)}</div>`:""}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn-icon btn-edit" onclick="event.stopPropagation();startEdit(${idx})">✏️ 編集</button>
+          <button class="btn-icon btn-del" onclick="event.stopPropagation();deleteCompany(${idx})">🗑 削除</button>
+          <button class="btn-icon" style="background:var(--bg);border:1px solid var(--border2);color:var(--text3)" onclick="event.stopPropagation();showDetail('${esc(c.会社名)}')">詳細 →</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">${YEARS.map(y=>`
+        <div style="text-align:center;min-width:44px">
+          <div style="font-size:9px;color:var(--text4);margin-bottom:3px">${y}</div>${badge(c.繁忙度[y])}
+        </div>`).join("")}</div>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════
+   DETAIL
+══════════════════════════════════════ */
+function showDetail(name){
+  const c=DB.find(x=>x.会社名===name); if(!c) return;
+  prevTab=currentTab;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  ["search","matrix","list"].forEach(t=>document.getElementById("pane-"+t).style.display="none");
+  const sec=(t,h)=>`<div class="sec"><div class="sec-title">${t}</div>${h}</div>`;
+  const row=(l,v)=>v&&v!=="—"?`<div class="row"><span class="row-lbl">${l}</span><span class="row-val">${esc(String(v))}</span></div>`:"";
+  const cidx=DB.findIndex(x=>x.会社名===name);
+  document.getElementById("pane-detail").innerHTML=`
+  <div class="detail-wrap">
+    <div class="detail-head">
+      <div>
+        <div class="detail-name">${esc(c.会社名)}</div>
+        ${c.日付?`<div class="detail-date">ヒアリング日：${esc(c.日付)}</div>`:""}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-icon btn-edit" onclick="backFromDetail();setTimeout(()=>{switchTab('list',document.getElementById('tab-btn-list'));setTimeout(()=>startEdit(${cidx}),80);},80)">✏️ 編集</button>
+        <button class="btn-icon btn-del" onclick="if(deleteCompany(${cidx}))backFromDetail()">🗑 削除</button>
+        <button class="btn btn-secondary btn-sm" onclick="backFromDetail()">← 一覧へ戻る</button>
+      </div>
+    </div>
+    ${sec("年度別 繁忙度",`<div class="year-grid">${YEARS.map(y=>`
+      <div class="year-cell"><div class="year-num">${y}</div>${badge(c.繁忙度[y],true)}</div>`).join("")}
+    </div>`)}
+    ${sec("受注・規模情報",row("第一希望 着工時期",c.新築受注可能_第一希望)+(c.新築受注可能_第二希望?row("第二希望 着工時期",c.新築受注可能_第二希望):"")+row("受注規模（工事費）",c.新築規模_工事費)+row("受注規模（延床面積）",c.新築規模_延床面積)+row("中規模案件 相談可否",c.中規模_相談可否))}
+    ${sec("用途・発注方式",row("積極受注 用途",c.積極受注_用途)+row("積極受注 規模",c.積極受注_規模)+row("積極受注 金額感",c.積極受注_金額)+row("消極受注 用途",c.消極受注_用途)+row("現在多い用途",c.首都圏_多い用途)+
+      `<div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">
+        ${[["発注_一括","一括発注"],["発注_分離","分離発注"],["発注_コストオン","コストオン"],["発注_設計施工一括","設計施工一括"]].map(([k,l])=>`<span class="chip ${c[k]?"chip-on":"chip-off"}">${c[k]?"◎":"—"} ${l}</span>`).join("")}
+      </div>`+(c.設計施工一括_方針&&c.設計施工一括_方針!=="—"?`<div class="note-box">${esc(c.設計施工一括_方針)}</div>`:"")
+    )}
+    ${sec("労務・工期状況",(c.逼迫工種&&c.逼迫工種!=="—"?`<div class="warn-box"><span>⚠️</span><span>逼迫工種：${esc(c.逼迫工種)}</span></div>`:"")+row("労務状況",c.労務_逼迫状況)+row("工期見解",c.工期_変動見解)+row("価格上昇状況",c.価格上昇_工種資材)+row("納期難 資材",c.納期難_材料製品))}
+    ${sec("会社規模（首都圏）",row("売上額",c.首都圏割合_売上額)+row("売上比率",c.首都圏割合_売上率)+row("社員数",c.首都圏割合_社員数)+row("海外戦略",c.海外戦略))}
+    ${c.自由記載?sec("自由記載",`<div class="note-box">${esc(c.自由記載)}</div>`):""}
+  </div>`;
+  document.getElementById("pane-detail").style.display="";
+  currentTab="detail";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function backFromDetail(){
+  document.getElementById("pane-detail").style.display="none";
+  currentTab=prevTab||"search";
+  document.getElementById("pane-"+currentTab).style.display="";
+  const btn=document.getElementById("tab-btn-"+currentTab);
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+}
+
+/* ══════════════════════════════════════
+   IMPORT
+══════════════════════════════════════ */
+function handleImport(input){
+  const file=input.files[0]; if(!file) return;
+  hideModal("modal-import");
+  if(file.name.endsWith(".json")){
+    const r=new FileReader(); r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!Array.isArray(d))throw new Error("Invalid");mergeData(d);}catch(e){notify("JSONの読み込みに失敗しました","err");}};r.readAsText(file);
+  } else {
+    showLoading("Excelを読み込み中...");
+    const r=new FileReader(); r.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});const entries=parseExcel(rows);hideLoading();if(!entries.length){notify("データが見つかりませんでした","err");return;}mergeData(entries);}catch(e){hideLoading();notify("Excelの読み込みに失敗："+e.message,"err");}};r.readAsArrayBuffer(file);
+  }
+  input.value="";
+}
+function mergeData(entries){
+  let a=0,u=0; entries.forEach(e=>{const i=DB.findIndex(d=>d.会社名===e.会社名);i>=0?(DB[i]={...DB[i],...e},u++):(DB.push(e),a++);});
+  saveLocal(); notify(`インポート完了：新規 ${a}社 追加、${u}社 更新 — 「💾 書き出し」でSharePointに反映してください`,"ok",7000); renderCurrentTab();
+}
+function parseExcel(rows){
+  let hi=-1; for(let i=0;i<Math.min(5,rows.length);i++){if(rows[i]?.some(c=>c&&String(c).includes("会社名"))){hi=i;break;}}
+  if(hi>=0){const hdrs=rows[hi],out=[];for(let r=hi+1;r<rows.length;r++){const row=rows[r];if(!row||!row[0])continue;const rec={};hdrs.forEach((h,i)=>{if(h)rec[h]=row[i];});const e=mapI(rec);if(e)out.push(e);}return out;}
+  const e=mapS(rows);return e?[e]:[];
+}
+function mapI(r){
+  const n=r["会社名"]||r["会社"];if(!n)return null;
+  const b={};YEARS.forEach(y=>{const v=r[`繁忙度_${y}`];if(v!=null)b[y]=parseInt(v)||null;});
+  const p=r["首都圏割合_売上%"];
+  return{会社名:String(n).trim(),日付:r["日付"]?String(r["日付"]):null,繁忙度:b,新築受注可能_第一希望:r["新築受注可能_第一希望"]||null,新築受注可能_第二希望:r["新築受注可能_第二希望"]||null,新築規模_工事費:r["新築規模_工事費"]||"—",新築規模_延床面積:r["新築規模_延床面積"]||"—",中規模_相談可否:r["中規模_相談可否"]||"—",首都圏_多い用途:r["首都圏_多い用途"]||"—",積極受注_用途:r["積極受注_用途"]||"—",積極受注_規模:r["積極受注_規模"]||"—",積極受注_金額:r["積極受注_金額"]||"—",消極受注_用途:r["消極受注_用途"]||"—",発注_一括:!!r["発注_一括"],発注_分離:!!r["発注_分離"],発注_コストオン:!!r["発注_コストオン"],発注_設計施工一括:!!r["発注_設計施工一括"],設計施工一括_方針:r["設計施工一括_方針"]||"—",価格上昇_工種資材:r["価格上昇_工種資材"]||"—",納期難_材料製品:r["納期難_材料製品"]||"—",労務_逼迫状況:r["労務_逼迫状況"]||"—",逼迫工種:r["逼迫工種"]||"—",工期_変動見解:r["工期_変動見解"]||"—",首都圏割合_売上額:r["首都圏割合_売上額"]||"—",首都圏割合_売上率:p!=null?(typeof p==="number"?Math.round(p*100)+"%":String(p)):"—",首都圏割合_社員数:r["首都圏割合_社員数"]||"—",海外戦略:r["海外戦略"]||"—",自由記載:r["自由記載"]||null};
+}
+function mapS(rows){
+  const f=kw=>{for(const r of rows){if(!r)continue;for(let i=0;i<r.length;i++){if(r[i]&&String(r[i]).includes(kw)){for(let j=i+1;j<r.length;j++){if(r[j]!=null&&r[j]!=="")return r[j];}}}}return null;};
+  const n=f("ヒアリング先");if(!n)return null;
+  const b={};for(const r of rows){if(!r)continue;for(let i=0;i<r.length;i++){const y=parseInt(r[i]);if(YEARS.includes(y)&&r[i+1]!=null)b[y]=parseInt(r[i+1])||null;}}
+  return{会社名:String(n).trim(),日付:f("日付")?String(f("日付")):null,繁忙度:b,新築受注可能_第一希望:f("第一希望")||"—",新築受注可能_第二希望:null,新築規模_工事費:"—",新築規模_延床面積:"—",中規模_相談可否:"—",首都圏_多い用途:"—",積極受注_用途:"—",積極受注_規模:"—",積極受注_金額:"—",消極受注_用途:"—",発注_一括:false,発注_分離:false,発注_コストオン:false,発注_設計施工一括:false,設計施工一括_方針:"—",価格上昇_工種資材:"—",納期難_材料製品:"—",労務_逼迫状況:"—",逼迫工種:"—",工期_変動見解:"—",首都圏割合_売上額:"—",首都圏割合_売上率:"—",首都圏割合_社員数:"—",海外戦略:"—",自由記載:null};
+}
+
+/* ══════════════════════════════════════
+   DELETE & EDIT
+══════════════════════════════════════ */
+function deleteCompany(idx){
+  const name = DB[idx]?.会社名;
+  if(!name) return false;
+  if(!confirm(`「${name}」を削除しますか？\nこの操作は元に戻せません。`)) return false;
+  DB.splice(idx,1);
+  saveLocal();
+  notify(`「${name}」を削除しました — 「💾 書き出し」でSharePointに反映してください`,"ok",7000);
+  if(currentTab==="detail") backFromDetail();
+  else renderCurrentTab();
+  return true;
+}
+
+function startEdit(idx){
+  const c = DB[idx];
+  if(!c) return;
+  // Build inline edit form above the card
+  const busyOptions = Object.entries(BUSY).map(([k,v])=>`<option value="${k}">${k} ${v.label}</option>`).join("");
+  const formId = "edit-form-"+idx;
+  // Remove any existing form
+  document.querySelectorAll(".edit-form").forEach(f=>f.remove());
+
+  const formHtml = `
+  <div class="edit-form" id="${formId}">
+    <div class="edit-form-title">
+      <span>✏️ 編集：${esc(c.会社名)}</span>
+      <button class="btn-icon btn-del" onclick="cancelEdit()">✕ キャンセル</button>
+    </div>
+    <div class="edit-grid">
+      <div class="edit-section-label">基本情報</div>
+      <div class="edit-field">
+        <label>会社名</label>
+        <input id="ef-name" value="${esc(c.会社名||'')}">
+      </div>
+      <div class="edit-field">
+        <label>ヒアリング日</label>
+        <input id="ef-date" value="${esc(c.日付||'')}">
+      </div>
+      <div class="edit-section-label">年度別 繁忙度</div>
+      <div class="edit-field edit-field-full">
+        <div class="busy-row">
+          ${YEARS.map(y=>`
+          <div class="busy-select">
+            <label>${y}</label>
+            <select id="ef-busy-${y}">${busyOptions}</select>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div class="edit-section-label">受注情報</div>
+      <div class="edit-field">
+        <label>第一希望 着工時期</label>
+        <input id="ef-h1" value="${esc(c.新築受注可能_第一希望||'')}">
+      </div>
+      <div class="edit-field">
+        <label>第二希望 着工時期</label>
+        <input id="ef-h2" value="${esc(c.新築受注可能_第二希望||'')}">
+      </div>
+      <div class="edit-field">
+        <label>受注規模（工事費）</label>
+        <input id="ef-cost" value="${esc(c.新築規模_工事費||'')}">
+      </div>
+      <div class="edit-field">
+        <label>受注規模（延床面積）</label>
+        <input id="ef-area" value="${esc(c.新築規模_延床面積||'')}">
+      </div>
+      <div class="edit-field">
+        <label>積極受注 用途</label>
+        <input id="ef-pos" value="${esc(c.積極受注_用途||'')}">
+      </div>
+      <div class="edit-field">
+        <label>消極受注 用途</label>
+        <input id="ef-neg" value="${esc(c.消極受注_用途||'')}">
+      </div>
+      <div class="edit-section-label">逼迫状況</div>
+      <div class="edit-field edit-field-full">
+        <label>逼迫工種</label>
+        <textarea id="ef-tight">${esc(c.逼迫工種||'')}</textarea>
+      </div>
+      <div class="edit-field edit-field-full">
+        <label>労務逼迫状況</label>
+        <textarea id="ef-labor">${esc(c.労務_逼迫状況||'')}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="saveEdit(${idx})">💾 保存する</button>
+      <button class="btn btn-secondary" onclick="cancelEdit()">キャンセル</button>
+    </div>
+  </div>`;
+
+  // Insert before the card
+  const cards = document.getElementById("list-cards").children;
+  if(cards[idx]){
+    cards[idx].insertAdjacentHTML("beforebegin", formHtml);
+  } else {
+    document.getElementById("list-cards").insertAdjacentHTML("afterbegin", formHtml);
+  }
+
+  // Set busy values
+  YEARS.forEach(y=>{
+    const sel=document.getElementById(`ef-busy-${y}`);
+    if(sel && c.繁忙度[y]) sel.value=String(c.繁忙度[y]);
+  });
+
+  document.getElementById(formId).scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function cancelEdit(){
+  document.querySelectorAll(".edit-form").forEach(f=>f.remove());
+}
+
+function saveEdit(idx){
+  const c = DB[idx]; if(!c) return;
+  const name = document.getElementById("ef-name")?.value.trim();
+  if(!name){ notify("会社名は必須です","err"); return; }
+
+  // Check for duplicate name (excluding self)
+  if(DB.some((d,i)=>i!==idx && d.会社名===name)){
+    notify("同じ会社名がすでに登録されています","err"); return;
+  }
+
+  c.会社名 = name;
+  c.日付 = document.getElementById("ef-date")?.value.trim() || null;
+  c.新築受注可能_第一希望 = document.getElementById("ef-h1")?.value.trim() || "—";
+  c.新築受注可能_第二希望 = document.getElementById("ef-h2")?.value.trim() || null;
+  c.新築規模_工事費 = document.getElementById("ef-cost")?.value.trim() || "—";
+  c.新築規模_延床面積 = document.getElementById("ef-area")?.value.trim() || "—";
+  c.積極受注_用途 = document.getElementById("ef-pos")?.value.trim() || "—";
+  c.消極受注_用途 = document.getElementById("ef-neg")?.value.trim() || "—";
+  c.逼迫工種 = document.getElementById("ef-tight")?.value.trim() || "—";
+  c.労務_逼迫状況 = document.getElementById("ef-labor")?.value.trim() || "—";
+  YEARS.forEach(y=>{
+    const v=parseInt(document.getElementById(`ef-busy-${y}`)?.value);
+    c.繁忙度[y] = v||null;
+  });
+
+  DB[idx] = c;
+  saveLocal();
+  cancelEdit();
+  notify(`「${name}」を更新しました — 「💾 書き出し」でSharePointに反映してください`,"ok",7000);
+  renderList();
+}
+
+/* ══════════════════════════════════════
+   EXCEL EXPORT
+══════════════════════════════════════ */
+function exportExcel(){
+  try {
+    const headers = ["会社名","日付",...YEARS.map(y=>`繁忙度_${y}`),"新築受注可能_第一希望","新築受注可能_第二希望","新築規模_工事費","新築規模_延床面積","中規模_相談可否","首都圏_多い用途","積極受注_用途","積極受注_規模","積極受注_金額","消極受注_用途","発注_一括","発注_分離","発注_コストオン","発注_設計施工一括","設計施工一括_方針","価格上昇_工種資材","納期難_材料製品","労務_逼迫状況","逼迫工種","工期_変動見解","首都圏割合_売上額","首都圏割合_売上率","首都圏割合_社員数","海外戦略","自由記載"];
+    const rows = DB.map(c=>[
+      c.会社名, c.日付||"",
+      ...YEARS.map(y=>c.繁忙度[y]||""),
+      c.新築受注可能_第一希望||"", c.新築受注可能_第二希望||"",
+      c.新築規模_工事費||"", c.新築規模_延床面積||"",
+      c.中規模_相談可否||"", c.首都圏_多い用途||"",
+      c.積極受注_用途||"", c.積極受注_規模||"", c.積極受注_金額||"",
+      c.消極受注_用途||"",
+      c.発注_一括?"◎":"", c.発注_分離?"◎":"", c.発注_コストオン?"◎":"", c.発注_設計施工一括?"◎":"",
+      c.設計施工一括_方針||"", c.価格上昇_工種資材||"", c.納期難_材料製品||"",
+      c.労務_逼迫状況||"", c.逼迫工種||"", c.工期_変動見解||"",
+      c.首都圏割合_売上額||"", c.首都圏割合_売上率||"", c.首都圏割合_社員数||"",
+      c.海外戦略||"", c.自由記載||""
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
+    // Column widths
+    ws["!cols"] = headers.map(h=>({wch:Math.max(h.length*2,12)}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ヒアリングデータ");
+    XLSX.writeFile(wb, "ゼネコンヒアリング_"+new Date().toISOString().slice(0,10).replace(/-/g,"")+".xlsx");
+    notify("Excelファイルをダウンロードしました","ok");
+  } catch(e) {
+    notify("Excel出力に失敗しました："+e.message,"err");
+  }
+}
+function exportJSON(){ showModal("modal-export"); }
+function doExportJSON(){
+  const b=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const u=URL.createObjectURL(b),a=document.createElement("a");
+  a.href=u;a.download="gencon_data_"+new Date().toISOString().slice(0,10).replace(/-/g,"")+".json";
+  a.click();URL.revokeObjectURL(u);
+  notify("ダウンロードしました。SharePointに「gencon_data.json」として上書き保存してください。","ok",7000);
+}
+function resetData(){
+  if(!confirm("全データを削除して空の状態にリセットしますか？\nこの操作は元に戻せません。")) return;
+  DB=[]; saveLocal(); hideModal("modal-help");
+  switchTab("search",document.getElementById("tab-btn-search"));
+  notify("全データを削除しました","info");
+}
+function showModal(id){document.getElementById(id).style.display="flex";}
+function hideModal(id){document.getElementById(id).style.display="none";}
+function overlayClose(e,id){if(e.target===document.getElementById(id))hideModal(id);}
+function showLoading(m){document.getElementById("loading-msg").textContent=m||"読み込み中...";showModal("modal-loading");}
+function hideLoading(){hideModal("modal-loading");}
+let _nt={}; function notify(msg,type,dur=5000){
+  const id="n_"+Date.now();const cls={ok:"n-ok",err:"n-err",info:"n-info",warn:"n-warn"}[type]||"n-info";
+  document.getElementById("notice-area").insertAdjacentHTML("beforeend",`<div id="${id}" class="notice ${cls}"><span>${msg}</span><button onclick="document.getElementById('${id}').remove()">✕</button></div>`);
+  if(dur)setTimeout(()=>{const e=document.getElementById(id);if(e)e.remove();},dur);
+}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+loadLocal();
+initSpUI();
+renderSearch();
+updateStats();
+</script>
+</body>
+</html>
