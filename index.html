@@ -585,7 +585,11 @@ async function syncFromSharePoint(silent){
   if(!silent) showLoading("SharePointからデータを読み込み中...");
   setSyncUI("loading");
   try{
-    const res = await fetch(url.includes("?")?url+"&_="+Date.now():url+"?_="+Date.now(), {mode:"cors",credentials:"include"});
+    const fetchOpts = url.includes("sharepoint.com") 
+      ? {mode:"cors", credentials:"include"}
+      : {mode:"cors"};
+    const fetchUrl = url.includes("?") ? url+"&_="+Date.now() : url+"?_="+Date.now();
+    const res = await fetch(fetchUrl, fetchOpts);
     if(!res.ok) throw new Error("HTTP "+res.status);
     const json = await res.json();
     if(!Array.isArray(json)) throw new Error("Invalid format");
