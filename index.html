@@ -354,11 +354,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   <div class="modal">
     <div class="modal-title">📥 データをインポート</div>
     <div class="modal-desc">
-      対応ファイル：<br>
-      ① 「ヒアリング_データ統合.xlsx」— 複数社の統合アンケートデータ<br>
-      ② 個別ヒアリングシート .xlsx — 1社分のアンケート結果<br>
-      ③ 書き出し済みJSONファイル .json<br><br>
-      同じ会社名のデータは最新情報に自動更新されます。
+      以下のいずれかのファイルを選択してください：<br><br>
+      <strong>① ヒアリング統合Excel（複数社）</strong><br>
+      　1行目がヘッダー行で「会社名」「繁忙度_2026」等のカラムがあるもの<br><br>
+      <strong>② 個別ヒアリングシートExcel（1社分）</strong><br>
+      　ヒアリング用紙をExcel化したもの（会社名・繁忙度等が所定のセルに記入済み）<br><br>
+      <strong>③ 書き出し済みJSONファイル</strong><br>
+      　このツールの「💾 書き出し」で出力した .json ファイル<br><br>
+      ※ ファイル名は何でもOKです。<br>
+      ※ 同じ会社名のデータは自動で最新情報に上書き更新されます。
     </div>
     <input type="file" id="import-file" accept=".xlsx,.json" style="display:none" onchange="doImport(event)">
     <div class="modal-acts">
@@ -603,46 +607,83 @@ function importExcel(file){
 
 function parseUnifiedRow(row){
   const c={繁忙度:{}};
-  Object.keys(row).forEach(k=>{
-    const m=k.match(/繁忙度[_-]?(\d{4})/);
-    if(m){ c.繁忙度[m[1]]=parseInt(row[k])||3; }
-    else {
-      const map={
-        "会社名":"会社名","日付":"日付","場所":"場所","先方担当者名":"先方担当者名",
-        "新築受注可能_第一希望":"新築受注可能_第一希望","新築受注可能_第二希望":"新築受注可能_第二希望",
-        "新築規模_工事費":"新築規模_工事費","新築規模_延床面積":"新築規模_延床面積",
-        "中規模_相談可否":"中規模_相談可否","積極受注_用途/規模/金額":"積極受注_用途",
-        "消極受注_用途/規模/金額":"消極受注_用途","労務_逼迫状況":"労務_逼迫状況",
-        "逼迫工種":"逼迫工種","工期_変動見解":"工期_変動見解","海外戦略":"海外戦略",
-        "自由記載":"自由記載","首都圏_多い用途":"首都圏_多い用途",
-      };
-      if(map[k]) c[map[k]]=row[k]||null;
-    }
+  // 繁忙度カラムを抽出
+  YEARS.forEach(y=>{
+    const val = row["繁忙度_"+y] || row["繁忙度-"+y] || row["繁忙度"+y];
+    c.繁忙度[y] = parseInt(val)||3;
   });
-  YEARS.forEach(y=>{ if(!c.繁忙度[y]) c.繁忙度[y]=3; });
+  // その他カラムを直接マッピング
+  const direct = [
+    "会社名","日付","場所","先方担当者名",
+    "新築受注可能_第一希望","新築受注可能_第二希望",
+    "新築規模_工事費","新築規模_延床面積","中規模_相談可否",
+    "首都圏_多い用途","積極受注_用途","積極受注_規模","積極受注_金額",
+    "消極受注_用途","消極受注_規模","消極受注_金額",
+    "首都圏割合_売上額","首都圏割合_売上%","首都圏割合_社員数",
+    "首都圏_新築改修割合","発注_一括","発注_分離","発注_コストオン","発注_設計施工一括",
+    "設計施工一括_方針","価格上昇_工種資材","納期難_材料製品","物価上昇_変更契約",
+    "労務_逼迫状況","逼迫工種","工期_変動見解","工期短縮_取組",
+    "設計監理_意見","海外戦略","自由記載"
+  ];
+  direct.forEach(k=>{ if(row[k]!==undefined && row[k]!==null && row[k]!=="") c[k]=String(row[k]).trim(); });
+  // 工事費・延床のゴミ文字除去（〔〕など）
+  if(c.新築規模_工事費) c.新築規模_工事費 = c.新築規模_工事費.replace(/[【】「」]/g,"").trim();
+  if(c.新築規模_延床面積) c.新築規模_延床面積 = c.新築規模_延床面積.replace(/[【】「」]/g,"").trim();
   return c;
 }
 
 function parseIndividualSheet(ws){
-  const getCell=(addr)=>{const c=ws[addr];return c?String(c.v).trim():""};
+  // 個別ヒアリングシートの構造:
+  // 行2 E列=日付, 行5 E列=会社名
+  // 行11 繁忙度: B列=2026, D=2027, F=2028, H=2029, J=2030, L=2031, N=2032
+  // 行12〜 H列(列8)=回答
+  const gc=(r,c)=>{
+    const addr=String.fromCharCode(64+c)+r;
+    const cell=ws[addr];
+    return cell?String(cell.v).trim():"";
+  };
+  // 繁忙度の①②③④⑤を数値変換
+  const lvMap={"①":1,"②":2,"③":3,"④":4,"⑤":5,"1":1,"2":2,"3":3,"4":4,"5":5};
+  const parseLv=(v)=>{ const s=String(v||"").trim(); return lvMap[s]||parseInt(s)||3; };
+
   return {
-    会社名: getCell("C3")||getCell("B3")||"不明",
-    日付: getCell("C2")||getCell("B2")||null,
+    会社名: gc(5,5)||gc(5,4)||"不明",   // E5
+    日付: gc(2,5)||gc(2,4)||null,         // E2
     繁忙度:{
-      2026:parseInt(getCell("D10"))||3,2027:parseInt(getCell("E10"))||3,
-      2028:parseInt(getCell("F10"))||3,2029:parseInt(getCell("G10"))||3,
-      2030:parseInt(getCell("H10"))||3,2031:parseInt(getCell("I10"))||3,
-      2032:parseInt(getCell("J10"))||3,
+      2026: parseLv(gc(11,2)),  // B11
+      2027: parseLv(gc(11,4)),  // D11
+      2028: parseLv(gc(11,6)),  // F11
+      2029: parseLv(gc(11,8)),  // H11
+      2030: parseLv(gc(11,10)), // J11
+      2031: parseLv(gc(11,12)), // L11
+      2032: parseLv(gc(11,14)), // N11
     },
-    新築受注可能_第一希望: getCell("C12")||null,
-    新築規模_工事費: getCell("C14")||null,
-    新築規模_延床面積: getCell("C15")||null,
-    中規模_相談可否: getCell("C16")||null,
-    積極受注_用途: getCell("C18")||null,
-    消極受注_用途: getCell("C19")||null,
-    労務_逼迫状況: getCell("C22")||null,
-    逼迫工種: getCell("C23")||null,
-    工期_変動見解: getCell("C24")||null,
+    新築受注可能_第一希望: gc(12,9)||null,  // I12
+    新築受注可能_第二希望: gc(12,13)||null, // M12
+    新築規模_工事費: gc(13,9)||null,        // I13
+    新築規模_延床面積: gc(13,13)||null,     // M13
+    中規模_相談可否: gc(14,9)||null,        // I14
+    首都圏_多い用途: gc(15,9)||null,        // I15
+    積極受注_用途: gc(16,9)||null,          // I16
+    積極受注_規模: gc(16,13)||null,         // M16
+    積極受注_金額: gc(16,15)||null,         // O16
+    消極受注_用途: gc(17,9)||null,          // I17
+    消極受注_規模: gc(17,13)||null,         // M17
+    消極受注_金額: gc(17,15)||null,         // O17
+    首都圏割合_売上額: gc(18,9)||null,      // I18
+    首都圏割合_社員数: gc(18,13)||null,     // M18
+    首都圏_新築改修割合: gc(19,8)||null,    // H19
+    設計施工一括_方針: gc(22,8)||null,      // H22
+    価格上昇_工種資材: gc(24,8)||null,      // H24
+    納期難_材料製品: gc(25,8)||null,        // H25
+    物価上昇_変更契約: gc(26,8)||null,      // H26
+    労務_逼迫状況: gc(28,8)||null,          // H28
+    逼迫工種: gc(29,8)||null,               // H29
+    工期_変動見解: gc(31,8)||null,          // H31
+    工期短縮_取組: gc(32,8)||null,          // H32
+    設計監理_意見: gc(34,8)||null,          // H34
+    海外戦略: gc(35,8)||null,               // H35
+    自由記載: gc(36,8)||null,               // H36（自由記載欄の次行かもしれない）
   };
 }
 
@@ -769,10 +810,15 @@ function renderSearch(){
     if((c.繁忙度?.[yr]||5) > lv) return false;
     // 中規模
     if(midsize && c.中規模_相談可否 !== midsize) return false;
-    // 積極用途キーワード
+    // 積極用途キーワード（用途・規模・金額・首都圏用途も含めて検索）
     if(usageKw){
       const kws = usageKw.split(/[、,\s]+/).filter(Boolean);
-      const target = (c.積極受注_用途||"").toLowerCase();
+      const target = [
+        c.積極受注_用途||"",
+        c.積極受注_規模||"",
+        c.積極受注_金額||"",
+        c.首都圏_多い用途||""
+      ].join(" ").toLowerCase();
       if(!kws.some(k=>target.includes(k))) return false;
     }
     // 工事費規模（データ内の数値と比較）
