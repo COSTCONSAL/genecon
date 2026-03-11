@@ -1,1129 +1,238 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ゼネコン逼迫状況 検索エンジン</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #f5f5f7;
-  --bg2: #ffffff;
-  --bg3: #fbfbfd;
-  --border: #d2d2d7;
-  --border2: #e8e8ed;
-  --text: #1d1d1f;
-  --text2: #424245;
-  --text3: #6e6e73;
-  --text4: #a1a1a6;
-  --accent: #0071e3;
-  --accent-h: #0077ed;
-  --accent-bg: #e8f0fe;
-  --green: #1d7d3c;
-  --green-bg: #e6f4ea;
-  --orange: #c05e00;
-  --orange-bg: #fff3e0;
-  --red: #c02b2b;
-  --red-bg: #fce8e6;
-  --yellow-bg: #fffde7;
-  --radius: 14px;
-  --shadow: 0 2px 12px rgba(0,0,0,.06);
-  --shadow2: 0 4px 24px rgba(0,0,0,.1);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
-
-/* ── PASSWORD ── */
-#pw-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
-.pw-box{background:var(--bg2);border-radius:20px;padding:44px 40px;max-width:400px;width:92%;box-shadow:var(--shadow2);border:1px solid var(--border2);text-align:center}
-.pw-icon{width:56px;height:56px;background:#1d1d1f;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:24px}
-.pw-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.02em}
-.pw-sub{font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.7}
-.pw-input{width:100%;padding:13px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;font-family:inherit;text-align:center;letter-spacing:.15em;margin-bottom:12px;transition:border-color .15s,box-shadow .15s;outline:none}
-.pw-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,113,227,.12)}
-.pw-btn{width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all .15s;letter-spacing:.02em}
-.pw-btn:hover{background:var(--accent-h);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,113,227,.3)}
-.pw-err{font-size:12px;color:var(--red);margin-top:10px;min-height:18px}
-@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
-
-/* ── NAV ── */
-.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border2);height:52px;display:flex;align-items:center;padding:0 20px;gap:10px}
-.nav-title{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-right:auto}
-.nav-title span{color:var(--accent)}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
-.btn:hover{background:var(--bg);border-color:var(--border)}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn-primary:hover{background:var(--accent-h);border-color:var(--accent-h)}
-.btn-sm{padding:5px 10px;font-size:11px}
-.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
-.dot-ok{background:var(--green)}
-.dot-err{background:var(--red)}
-.dot-loading{background:var(--orange);animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-
-/* ── HERO ── */
-.hero{padding:36px 20px 24px;max-width:900px;margin:0 auto}
-.hero-label{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
-.hero-title{font-family:'DM Sans',sans-serif;font-size:clamp(28px,5vw,40px);font-weight:700;line-height:1.15;letter-spacing:-.03em;color:var(--text);margin-bottom:16px}
-.hero-title em{color:var(--accent);font-style:normal}
-.hero-desc{font-size:13px;color:var(--text3);margin-bottom:20px;line-height:1.6}
-.stats-row{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:0}
-.stat{display:flex;flex-direction:column}
-.stat-val{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:700;color:var(--text);line-height:1}
-.stat-lbl{font-size:11px;color:var(--text4);margin-top:3px}
-.stat-err{font-size:13px;font-weight:600;color:var(--red)}
-
-/* ── TABS ── */
-.tab-bar{max-width:900px;margin:0 auto;padding:0 20px;border-bottom:1px solid var(--border2);display:flex;gap:0}
-.tab-btn{padding:12px 18px;font-size:13px;font-weight:500;color:var(--text3);border:none;background:none;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;white-space:nowrap}
-.tab-btn:hover{color:var(--text2)}
-.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
-
-/* ── MAIN ── */
-.main{max-width:900px;margin:0 auto;padding:20px}
-.pane{display:none}
-.pane.active{display:block}
-
-/* ── SYNC BAR ── */
-.sync-bar{border-radius:var(--radius);border:1px solid var(--border2);padding:12px 16px;background:var(--bg2);display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.sync-bar-info{flex:1;min-width:0}
-.sync-bar-title{font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:6px}
-.sync-bar-title.err{color:var(--red)}
-.sync-bar-url{font-size:11px;color:var(--text4);margin-top:2px;word-break:break-all}
-.sync-bar-acts{display:flex;gap:6px;flex-shrink:0}
-.btn-danger{background:var(--red-bg);color:var(--red);border-color:rgba(192,43,43,.2)}
-.btn-danger:hover{background:#f8d7d7}
-
-/* ── SEARCH CARD ── */
-.search-card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border2);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
-.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:0}
-@media(max-width:700px){.form-row{grid-template-columns:1fr 1fr}}@media(max-width:480px){.form-row{grid-template-columns:1fr}}
-.form-group label{display:block;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
-.form-select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .15s}
-.form-select:focus{border-color:var(--accent)}
-.result-count{margin-top:14px;padding:12px 14px;background:var(--accent-bg);border-radius:8px;font-size:13px;color:var(--accent);font-weight:600;display:flex;justify-content:space-between;align-items:center}
-
-/* ── RESULT CARDS ── */
-.result-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.card{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border2);padding:16px 18px;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
-.card:hover{border-color:var(--border);box-shadow:var(--shadow2)}
-.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-.card-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-.card-acts{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.tag{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border2);color:var(--text2);background:var(--bg3)}
-.tag-g{background:var(--green-bg);color:var(--green);border-color:rgba(29,125,60,.15)}
-.tag-o{background:var(--orange-bg);color:var(--orange);border-color:rgba(192,94,0,.15)}
-.tag-r{background:var(--red-bg);color:var(--red);border-color:rgba(192,43,43,.15)}
-.tag-b{background:var(--accent-bg);color:var(--accent);border-color:rgba(0,113,227,.15)}
-.tag-y{background:var(--yellow-bg);color:#7a6000;border-color:rgba(200,160,0,.2)}
-.card-info{font-size:12px;color:var(--text3);line-height:1.7}
-.card-year{font-size:10px;color:var(--text4);text-align:right;margin-bottom:2px}
-.mini-bar{display:flex;gap:2px;justify-content:flex-end}
-.mini-seg{width:8px;height:8px;border-radius:2px;background:var(--border2)}
-.mini-seg.on-1{background:#1d7d3c}.mini-seg.on-2{background:#4caf50}.mini-seg.on-3{background:#ff9800}.mini-seg.on-4{background:#f44336}.mini-seg.on-5{background:#9c27b0}
-.btn-icon{padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
-.btn-icon:hover{background:var(--bg);border-color:var(--border)}
-.btn-edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(0,113,227,.2)}
-.btn-edit:hover{background:#dbeafe}
-.btn-del{background:var(--red-bg);color:var(--red);border-color:rgba(192,43,43,.18)}
-.btn-del:hover{background:#f8d7d7}
-
-/* ── MATRIX ── */
-.matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.matrix{border-collapse:collapse;width:100%;min-width:500px}
-.matrix th,.matrix td{padding:8px 10px;border:1px solid var(--border2);font-size:12px;text-align:center;white-space:nowrap}
-.matrix th{background:var(--bg3);font-weight:600;color:var(--text2)}
-.matrix td.company-cell{text-align:left;font-weight:500;color:var(--text);min-width:130px}
-.cell-1{background:#e6f4ea;color:#1d7d3c;font-weight:700}
-.cell-2{background:#f1f8e9;color:#558b2f;font-weight:600}
-.cell-3{background:#fff8e1;color:#f57f17;font-weight:600}
-.cell-4{background:#fce4ec;color:#c62828;font-weight:700}
-.cell-5{background:#ede7f6;color:#6a1b9a;font-weight:700}
-
-/* ── DETAIL ── */
-#pane-detail{display:none}
-#pane-detail.active{display:block}
-.detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.detail-name{font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
-.detail-date{font-size:12px;color:var(--text4);margin-top:4px}
-.detail-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.section{background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border2);padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
-.section-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border2)}
-.year-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-bottom:4px}
-.year-cell{border-radius:8px;padding:8px;text-align:center;border:1px solid transparent}
-.year-cell .yr{font-size:10px;color:var(--text4);margin-bottom:4px}
-.year-cell .lv{font-size:13px;font-weight:700}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:580px){.info-grid{grid-template-columns:1fr}}
-.info-item label{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-bottom:3px}
-.info-item p{font-size:13px;color:var(--text2);line-height:1.6}
-.info-item.full{grid-column:1/-1}
-.badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-
-/* ── EDIT FORM ── */
-.edit-wrap{background:var(--bg2);border-radius:var(--radius);border:2px solid var(--accent);padding:20px;margin-bottom:12px}
-.edit-title{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-@media(max-width:580px){.edit-grid{grid-template-columns:1fr}}
-.edit-field label{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text4);margin-bottom:4px}
-.edit-field input,.edit-field select,.edit-field textarea{width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s}
-.edit-field input:focus,.edit-field select:focus,.edit-field textarea:focus{border-color:var(--accent)}
-.edit-field textarea{resize:vertical;min-height:60px}
-.edit-field.full{grid-column:1/-1}
-.edit-year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px}
-.edit-year-cell label{display:block;font-size:10px;font-weight:600;color:var(--text4);margin-bottom:3px;text-align:center}
-.edit-year-cell select{width:100%;padding:5px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;font-family:inherit;text-align:center;outline:none}
-.edit-acts{display:flex;gap:8px;justify-content:flex-end}
-
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:var(--bg2);border-radius:20px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
-.modal-title{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.02em}
-.modal-desc{font-size:13px;color:var(--text3);line-height:1.7;margin-bottom:20px}
-.modal-desc code{background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent);font-family:monospace}
-.modal-acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.modal-input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;margin-bottom:12px;outline:none;transition:border-color .15s}
-.modal-input:focus{border-color:var(--accent)}
-
-/* ── NOTIFY ── */
-.notify-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none;max-width:340px}
-.notify{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;font-size:12px;line-height:1.5;box-shadow:var(--shadow2);pointer-events:auto;animation:slideIn .25s ease;color:var(--text2)}
-.notify.ok{border-left:3px solid var(--green);color:var(--green)}
-.notify.err{border-left:3px solid var(--red);color:var(--red)}
-.notify.info{border-left:3px solid var(--accent);color:var(--accent)}
-@keyframes slideIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-/* ── LOADING ── */
-.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:400;display:none;align-items:center;justify-content:center}
-.loading-overlay.show{display:flex}
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ── EMPTY ── */
-.empty{text-align:center;padding:48px 20px;color:var(--text4)}
-.empty-icon{font-size:36px;margin-bottom:12px}
-.empty p{font-size:13px;line-height:1.7}
-
-/* ── FOOTER ── */
-.footer{text-align:center;font-size:11px;color:var(--text4);padding:24px 0 40px}
-</style>
-</head>
-<body>
-
-<!-- PASSWORD -->
-<div id="pw-screen">
-  <div class="pw-box" id="pw-box">
-    <div class="pw-icon">🏗</div>
-    <div class="pw-title">ゼネコン逼迫状況 検索エンジン</div>
-    <div class="pw-sub">このツールは社内限定です。<br>パスワードを入力してください。</div>
-    <input class="pw-input" id="pw-input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <button class="pw-btn" onclick="checkPw()">ログイン</button>
-    <div class="pw-err" id="pw-err"></div>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
-
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-title">ゼネコン<span>逼迫状況</span> 検索エンジン</div>
-  <button class="btn" onclick="openImport()">📥 インポート</button>
-  <button class="btn" onclick="openExport()">💾 書き出し</button>
-  <button class="btn" onclick="exportExcel()">📊 Excel出力</button>
-  <button class="btn btn-sm" id="nav-sync-status" style="cursor:default;pointer-events:none;display:none"></button>
-</nav>
-
-<!-- HERO -->
-<div class="hero">
-  <div class="hero-label">General Contractor Intelligence Platform</div>
-  <div class="hero-title">ゼネコン<em>逼迫状況</em><br>検索エンジン</div>
-  <div class="hero-desc">年度・繁忙度・規模・用途から、最適なゼネコンをすぐに見つける</div>
-  <div class="stats-row">
-    <div class="stat"><div class="stat-val" id="stat-count">0</div><div class="stat-lbl">登録社数</div></div>
-    <div class="stat"><div class="stat-val">2026〜32</div><div class="stat-lbl">対応年度</div></div>
-    <div class="stat" id="stat-sync-wrap" style="display:none"><div class="stat-err" id="stat-sync"></div><div class="stat-lbl">データ状態</div></div>
-  </div>
-</div>
-
-<!-- TABS -->
-<div class="tab-bar">
-  <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">🔍 条件検索</button>
-  <button class="tab-btn" id="tab-matrix" onclick="switchTab('matrix')">📊 繁忙度マトリクス</button>
-  <button class="tab-btn" id="tab-list" onclick="switchTab('list')">📋 全社一覧</button>
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
-  <!-- SEARCH -->
-  <div class="pane active" id="pane-search">
-    <div id="sync-bar-search"></div>
-    <div class="search-card">
-      <div class="form-row">
-        <div class="form-group">
-          <label>着工希望年度</label>
-          <select class="form-select" id="sel-year" onchange="renderSearch()">
-            <option value="2026">2026年度</option><option value="2027">2027年度</option>
-            <option value="2028" selected>2028年度</option><option value="2029">2029年度</option>
-            <option value="2030">2030年度</option><option value="2031">2031年度</option>
-            <option value="2032">2032年度</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>繁忙度（上限）</label>
-          <select class="form-select" id="sel-level" onchange="renderSearch()">
-            <option value="1">① 受注前向き のみ</option>
-            <option value="2">② 余裕有 まで</option>
-            <option value="3" selected>③ 通常 まで</option>
-            <option value="4">④ 繁忙 まで</option>
-            <option value="5">⑤ 全て表示</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>工事費規模（目安）</label>
-          <select class="form-select" id="sel-cost" onchange="renderSearch()">
-            <option value="">指定なし</option>
-            <option value="10">〜10億円程度</option>
-            <option value="30">〜30億円程度</option>
-            <option value="50">〜50億円程度</option>
-            <option value="80">〜80億円程度</option>
-            <option value="100">〜100億円程度</option>
-            <option value="200">〜200億円程度</option>
-            <option value="300">300億円超も対応</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>延床面積（目安）</label>
-          <select class="form-select" id="sel-area" onchange="renderSearch()">
-            <option value="">指定なし</option>
-            <option value="3000">〜3,000㎡</option>
-            <option value="5000">〜5,000㎡</option>
-            <option value="10000">〜10,000㎡</option>
-            <option value="20000">〜20,000㎡</option>
-            <option value="40000">〜40,000㎡</option>
-            <option value="99999">40,000㎡超も対応</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>中規模相談</label>
-          <select class="form-select" id="sel-midsize" onchange="renderSearch()">
-            <option value="">指定なし</option>
-            <option value="可能">相談可能のみ</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>積極用途キーワード</label>
-          <input type="text" class="form-select" id="sel-usage" placeholder="例：オフィス、物流、ホテル" oninput="renderSearch()" style="background:var(--bg)">
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:10px">
-        <button class="btn btn-sm" onclick="clearFilters()">✕ 条件をリセット</button>
-      </div>
-      <div class="result-count" id="result-count" style="margin-top:10px">
-        <span id="result-label">条件に合うゼネコン</span>
-        <span><strong id="result-num">0</strong> 社該当</span>
-      </div>
-    </div>
-    <div class="result-list" id="result-list"></div>
-  </div>
-
-  <!-- MATRIX -->
-  <div class="pane" id="pane-matrix">
-    <div id="matrix-container"></div>
-  </div>
-
-  <!-- LIST -->
-  <div class="pane" id="pane-list">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn btn-sm btn-danger" onclick="resetAll()">🗑 全データリセット</button>
-    </div>
-    <div id="list-container"></div>
-  </div>
-
-  <!-- DETAIL -->
-  <div id="pane-detail"></div>
-
-</div>
-
-<!-- MODALS -->
-<div class="modal-overlay" id="modal-import" style="display:none" onclick="if(event.target===this)closeModal('modal-import')">
-  <div class="modal">
-    <div class="modal-title">📥 データをインポート</div>
-    <div class="modal-desc">
-      以下のいずれかのファイルを選択してください：<br><br>
-      <strong>① ヒアリング統合Excel（複数社）</strong><br>
-      　1行目がヘッダー行で「会社名」「繁忙度_2026」等のカラムがあるもの<br><br>
-      <strong>② 個別ヒアリングシートExcel（1社分）</strong><br>
-      　ヒアリング用紙をExcel化したもの（会社名・繁忙度等が所定のセルに記入済み）<br><br>
-      <strong>③ 書き出し済みJSONファイル</strong><br>
-      　このツールの「💾 書き出し」で出力した .json ファイル<br><br>
-      ※ ファイル名は何でもOKです。<br>
-      ※ 同じ会社名のデータは自動で最新情報に上書き更新されます。
-    </div>
-    <input type="file" id="import-file" accept=".xlsx,.json" style="display:none" onchange="doImport(event)">
-    <div class="modal-acts">
-      <button class="btn" onclick="closeModal('modal-import')">キャンセル</button>
-      <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">ファイルを選択</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-export" style="display:none" onclick="if(event.target===this)closeModal('modal-export')">
-  <div class="modal">
-    <div class="modal-title">💾 データを書き出し</div>
-    <div class="modal-desc">
-      <strong>全社に共有する手順：</strong><br><br>
-      ①「JSONをダウンロード」をクリック<br>
-      ② GitHubの <code>gencon</code> リポジトリを開く<br>
-      ③ <code>gencon_data.json</code> をクリック → ✏️ → 内容を全選択して貼り付け → Commit<br>
-      　または「Add file」→「Upload files」で <code>gencon_data.json</code> として上書き<br><br>
-      ④ 全員が「🔄 今すぐ同期」を押すと最新データが反映されます<br><br>
-      <strong style="color:var(--orange)">⚠ ファイル名は必ず <code>gencon_data.json</code> で保存してください。</strong>
-    </div>
-    <div class="modal-acts">
-      <button class="btn" onclick="closeModal('modal-export')">閉じる</button>
-      <button class="btn btn-primary" onclick="doDownloadJson()">📥 JSONをダウンロード</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-url" style="display:none" onclick="if(event.target===this)closeModal('modal-url')">
-  <div class="modal">
-    <div class="modal-title">🔗 GitHub連携URL設定</div>
-    <div class="modal-desc">gencon_data.json の raw URLを入力してください。</div>
-    <input class="modal-input" id="url-input" type="text" placeholder="https://raw.githubusercontent.com/...">
-    <div class="modal-acts">
-      <button class="btn" onclick="closeModal('modal-url')">キャンセル</button>
-      <button class="btn btn-primary" onclick="saveUrl()">保存して同期</button>
-    </div>
-  </div>
-</div>
-
-<!-- NOTIFY -->
-<div class="notify-wrap" id="notify-wrap"></div>
-
-<div class="footer">ゼネコン逼迫状況 検索エンジン — 社内限定</div>
-
-<script>
-/* ════════════════════════════════════════
-   CONSTANTS
-════════════════════════════════════════ */
-const APP_PASSWORD = "mec2026";
-const PRESET_URL   = "https://raw.githubusercontent.com/COSTCONSAL/genecon/refs/heads/main/gencon_data.json";
-const LS_DATA      = "gencon_db_v2";
-const LS_URL       = "gencon_sp_url_v2";
-const SS_AUTH      = "gencon_auth_v1";
-
-const LEVEL_LABELS = {1:"① 受注前向き",2:"② 余裕有",3:"③ 通常",4:"④ 繁忙",5:"⑤ 受注不可"};
-const YEARS = [2026,2027,2028,2029,2030,2031,2032];
-
-let DB = [];
-let currentTab = "search";
-let detailPrev = null;
-
-/* ════════════════════════════════════════
-   PASSWORD
-════════════════════════════════════════ */
-function checkPw(){
-  const v = document.getElementById("pw-input").value;
-  const e = document.getElementById("pw-err");
-  if(v === APP_PASSWORD){
-    sessionStorage.setItem(SS_AUTH,"1");
-    document.getElementById("pw-screen").style.display="none";
-  } else {
-    e.textContent = "パスワードが違います。";
-    document.getElementById("pw-input").value="";
-    document.getElementById("pw-input").focus();
-    document.getElementById("pw-box").style.animation="shake .4s";
-    setTimeout(()=>document.getElementById("pw-box").style.animation="",400);
-  }
-}
-
-/* ════════════════════════════════════════
-   STORAGE
-════════════════════════════════════════ */
-function saveLocal(){ try{ localStorage.setItem(LS_DATA,JSON.stringify(DB)); }catch(e){} }
-function loadLocal(){
-  try{ const d=localStorage.getItem(LS_DATA); if(d) DB=JSON.parse(d); }catch(e){}
-}
-function getUrl(){ return localStorage.getItem(LS_URL)||PRESET_URL; }
-function setUrl(u){ localStorage.setItem(LS_URL,u); }
-
-/* ════════════════════════════════════════
-   SYNC
-════════════════════════════════════════ */
-async function syncFromGitHub(silent){
-  const url = getUrl();
-  if(!url){ setSyncUI("local"); return false; }
-  if(!silent) showLoading();
-  setSyncUI("loading");
-  try{
-    const fetchUrl = url.includes("?") ? url+"&_="+Date.now() : url+"?_="+Date.now();
-    const res = await fetch(fetchUrl, {mode:"cors"});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const json = await res.json();
-    if(!Array.isArray(json)) throw new Error("Invalid format");
-    DB = json; saveLocal(); setSyncUI("ok");
-    if(!silent){ hideLoading(); notify("GitHubからデータを読み込みました（"+DB.length+"社）","ok"); }
-    renderCurrentTab(); updateStats();
-    return true;
-  }catch(e){
-    setSyncUI("error");
-    if(!silent){ hideLoading(); notify("接続に失敗しました："+e.message,"err",7000); }
-    renderCurrentTab(); updateStats();
-    return false;
-  }
-}
-
-function setSyncUI(state){
-  const bar = document.getElementById("sync-bar-search");
-  const navBtn = document.getElementById("nav-sync-status");
-  const syncWrap = document.getElementById("stat-sync-wrap");
-  const syncStat = document.getElementById("stat-sync");
-  const url = getUrl();
-
-  if(state==="local"||!url){
-    bar.innerHTML=""; navBtn.style.display="none"; syncWrap.style.display="none"; return;
-  }
-
-  const dots = {ok:"dot-ok",error:"dot-err",loading:"dot-loading"};
-  const labels = {ok:"GitHub連携済み — 自動同期中",error:"接続エラー",loading:"同期中..."};
-  const dot = dots[state]||"dot-err";
-  const label = labels[state]||"接続エラー";
-
-  bar.innerHTML=`
-    <div class="sync-bar" style="margin-bottom:16px">
-      <div class="sync-bar-info">
-        <div class="sync-bar-title ${state==='error'?'err':''}">
-          <span class="status-dot ${dot}"></span>${label}
-        </div>
-        <div class="sync-bar-url">${url}</div>
-      </div>
-      <div class="sync-bar-acts">
-        <button class="btn btn-sm" onclick="syncFromGitHub(false)">🔄 今すぐ同期</button>
-        <button class="btn btn-sm" onclick="openUrlModal()">✏️ URL変更</button>
-        <button class="btn btn-sm btn-danger" onclick="disconnectSync()">連携解除</button>
-      </div>
-    </div>`;
-
-  navBtn.style.display="inline-flex";
-  navBtn.innerHTML=`<span class="status-dot ${dot}" style="margin-right:4px"></span>${state==='ok'?'GitHub連携済み':state==='error'?'接続エラー':'同期中...'}`;
-
-  if(state==="error"){
-    syncWrap.style.display="block";
-    syncStat.textContent="接続エラー";
-  } else {
-    syncWrap.style.display="none";
-  }
-}
-
-function disconnectSync(){
-  if(!confirm("GitHub連携を解除しますか？")) return;
-  localStorage.removeItem(LS_URL);
-  setSyncUI("local");
-  notify("連携を解除しました","info");
-}
-
-function openUrlModal(){
-  document.getElementById("url-input").value = getUrl();
-  openModal("modal-url");
-}
-
-function saveUrl(){
-  const u = document.getElementById("url-input").value.trim();
-  if(!u){ notify("URLを入力してください","err"); return; }
-  setUrl(u); closeModal("modal-url");
-  syncFromGitHub(false);
-}
-
-/* ════════════════════════════════════════
-   IMPORT
-════════════════════════════════════════ */
-function openImport(){ openModal("modal-import"); }
-
-function doImport(ev){
-  closeModal("modal-import");
-  const file = ev.target.files[0]; if(!file) return;
-  ev.target.value="";
-  const ext = file.name.split(".").pop().toLowerCase();
-  if(ext==="json") importJson(file);
-  else importExcel(file);
-}
-
-function importJson(file){
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const data=JSON.parse(e.target.result);
-      if(!Array.isArray(data)) throw new Error("配列形式ではありません");
-      let a=0,u=0;
-      data.forEach(c=>{
-        const i=DB.findIndex(d=>d.会社名===c.会社名);
-        if(i>=0){DB[i]=c;u++;}else{DB.push(c);a++;}
-      });
-      saveLocal(); notify(`インポート完了：新規 ${a}社 追加、${u}社 更新 — 「💾 書き出し」でGitHubに反映してください`,"ok",8000);
-      renderCurrentTab(); updateStats();
-    }catch(e){ notify("JSONの読み込みに失敗しました："+e.message,"err",6000); }
-  };
-  r.readAsText(file);
-}
-
-function importExcel(file){
-  showLoading();
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const wb=XLSX.read(e.target.result,{type:"array"});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
-      let a=0,u=0;
-      // 統合データ形式
-      if(rows[0]&&rows[0]["会社名"]!==undefined){
-        rows.forEach(row=>{
-          const c=parseUnifiedRow(row);
-          if(!c.会社名) return;
-          const i=DB.findIndex(d=>d.会社名===c.会社名);
-          if(i>=0){DB[i]=c;u++;}else{DB.push(c);a++;}
-        });
-      } else {
-        // 個別シート形式
-        const c=parseIndividualSheet(ws);
-        if(c&&c.会社名){
-          const i=DB.findIndex(d=>d.会社名===c.会社名);
-          if(i>=0){DB[i]=c;u++;}else{DB.push(c);a++;}
-        }
-      }
-      hideLoading(); saveLocal();
-      notify(`インポート完了：新規 ${a}社 追加、${u}社 更新 — 「💾 書き出し」でGitHubに反映してください`,"ok",8000);
-      renderCurrentTab(); updateStats();
-    }catch(e){ hideLoading(); notify("Excelの読み込みに失敗しました："+e.message,"err",6000); }
-  };
-  r.readAsArrayBuffer(file);
-}
-
-function parseUnifiedRow(row){
-  const c={繁忙度:{}};
-  // 繁忙度カラムを抽出
-  YEARS.forEach(y=>{
-    const val = row["繁忙度_"+y] || row["繁忙度-"+y] || row["繁忙度"+y];
-    c.繁忙度[y] = parseInt(val)||3;
-  });
-  // その他カラムを直接マッピング
-  const direct = [
-    "会社名","日付","場所","先方担当者名",
-    "新築受注可能_第一希望","新築受注可能_第二希望",
-    "新築規模_工事費","新築規模_延床面積","中規模_相談可否",
-    "首都圏_多い用途","積極受注_用途","積極受注_規模","積極受注_金額",
-    "消極受注_用途","消極受注_規模","消極受注_金額",
-    "首都圏割合_売上額","首都圏割合_売上%","首都圏割合_社員数",
-    "首都圏_新築改修割合","発注_一括","発注_分離","発注_コストオン","発注_設計施工一括",
-    "設計施工一括_方針","価格上昇_工種資材","納期難_材料製品","物価上昇_変更契約",
-    "労務_逼迫状況","逼迫工種","工期_変動見解","工期短縮_取組",
-    "設計監理_意見","海外戦略","自由記載"
-  ];
-  direct.forEach(k=>{ if(row[k]!==undefined && row[k]!==null && row[k]!=="") c[k]=String(row[k]).trim(); });
-  // 工事費・延床のゴミ文字除去（〔〕など）
-  if(c.新築規模_工事費) c.新築規模_工事費 = c.新築規模_工事費.replace(/[【】「」]/g,"").trim();
-  if(c.新築規模_延床面積) c.新築規模_延床面積 = c.新築規模_延床面積.replace(/[【】「」]/g,"").trim();
-  return c;
-}
-
-function parseIndividualSheet(ws){
-  // 個別ヒアリングシートの構造:
-  // 行2 E列=日付, 行5 E列=会社名
-  // 行11 繁忙度: B列=2026, D=2027, F=2028, H=2029, J=2030, L=2031, N=2032
-  // 行12〜 H列(列8)=回答
-  const gc=(r,c)=>{
-    const addr=String.fromCharCode(64+c)+r;
-    const cell=ws[addr];
-    return cell?String(cell.v).trim():"";
-  };
-  // 繁忙度の①②③④⑤を数値変換
-  const lvMap={"①":1,"②":2,"③":3,"④":4,"⑤":5,"1":1,"2":2,"3":3,"4":4,"5":5};
-  const parseLv=(v)=>{ const s=String(v||"").trim(); return lvMap[s]||parseInt(s)||3; };
-
-  return {
-    会社名: gc(5,5)||gc(5,4)||"不明",   // E5
-    日付: gc(2,5)||gc(2,4)||null,         // E2
-    繁忙度:{
-      2026: parseLv(gc(11,2)),  // B11
-      2027: parseLv(gc(11,4)),  // D11
-      2028: parseLv(gc(11,6)),  // F11
-      2029: parseLv(gc(11,8)),  // H11
-      2030: parseLv(gc(11,10)), // J11
-      2031: parseLv(gc(11,12)), // L11
-      2032: parseLv(gc(11,14)), // N11
+[
+  {
+    "繁忙度": {
+      "2026": 1,
+      "2027": 1,
+      "2028": 1,
+      "2029": 1,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
     },
-    新築受注可能_第一希望: gc(12,9)||null,  // I12
-    新築受注可能_第二希望: gc(12,13)||null, // M12
-    新築規模_工事費: gc(13,9)||null,        // I13
-    新築規模_延床面積: gc(13,13)||null,     // M13
-    中規模_相談可否: gc(14,9)||null,        // I14
-    首都圏_多い用途: gc(15,9)||null,        // I15
-    積極受注_用途: gc(16,9)||null,          // I16
-    積極受注_規模: gc(16,13)||null,         // M16
-    積極受注_金額: gc(16,15)||null,         // O16
-    消極受注_用途: gc(17,9)||null,          // I17
-    消極受注_規模: gc(17,13)||null,         // M17
-    消極受注_金額: gc(17,15)||null,         // O17
-    首都圏割合_売上額: gc(18,9)||null,      // I18
-    首都圏割合_社員数: gc(18,13)||null,     // M18
-    首都圏_新築改修割合: gc(19,8)||null,    // H19
-    設計施工一括_方針: gc(22,8)||null,      // H22
-    価格上昇_工種資材: gc(24,8)||null,      // H24
-    納期難_材料製品: gc(25,8)||null,        // H25
-    物価上昇_変更契約: gc(26,8)||null,      // H26
-    労務_逼迫状況: gc(28,8)||null,          // H28
-    逼迫工種: gc(29,8)||null,               // H29
-    工期_変動見解: gc(31,8)||null,          // H31
-    工期短縮_取組: gc(32,8)||null,          // H32
-    設計監理_意見: gc(34,8)||null,          // H34
-    海外戦略: gc(35,8)||null,               // H35
-    自由記載: gc(36,8)||null,               // H36（自由記載欄の次行かもしれない）
-  };
-}
-
-/* ════════════════════════════════════════
-   EXPORT
-════════════════════════════════════════ */
-function openExport(){ openModal("modal-export"); }
-
-function doDownloadJson(){
-  closeModal("modal-export");
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="gencon_data.json";
-  a.click();
-  notify("ダウンロードしました。GitHubの gencon_data.json を上書きして全員に反映してください。","ok",8000);
-}
-
-function exportExcel(){
-  if(!DB.length){ notify("データがありません","err"); return; }
-  const rows=DB.map(c=>({
-    "会社名":c.会社名||"",
-    "ヒアリング日":c.日付||"",
-    "繁忙度2026":c.繁忙度?.[2026]||"",
-    "繁忙度2027":c.繁忙度?.[2027]||"",
-    "繁忙度2028":c.繁忙度?.[2028]||"",
-    "繁忙度2029":c.繁忙度?.[2029]||"",
-    "繁忙度2030":c.繁忙度?.[2030]||"",
-    "繁忙度2031":c.繁忙度?.[2031]||"",
-    "繁忙度2032":c.繁忙度?.[2032]||"",
-    "着工希望（第一）":c.新築受注可能_第一希望||"",
-    "着工希望（第二）":c.新築受注可能_第二希望||"",
-    "規模_工事費":c.新築規模_工事費||"",
-    "規模_延床面積":c.新築規模_延床面積||"",
-    "中規模相談":c.中規模_相談可否||"",
-    "積極受注":c.積極受注_用途||"",
-    "消極受注":c.消極受注_用途||"",
-    "労務逼迫状況":c.労務_逼迫状況||"",
-    "逼迫工種":c.逼迫工種||"",
-    "工期見解":c.工期_変動見解||"",
-    "海外戦略":c.海外戦略||"",
-    "自由記載":c.自由記載||"",
-  }));
-  try{
-    const ws=XLSX.utils.json_to_sheet(rows);
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,"ゼネコンデータ");
-    XLSX.writeFile(wb,"gencon_export_"+new Date().toISOString().slice(0,10)+".xlsx");
-    notify("Excelを出力しました","ok");
-  }catch(e){ notify("Excel出力に失敗しました："+e.message,"err"); }
-}
-
-/* ════════════════════════════════════════
-   RENDER
-════════════════════════════════════════ */
-function esc(s){ if(!s) return "—"; const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
-
-function levelBadge(l){
-  const cls={1:"tag-b",2:"tag-g",3:"tag",4:"tag-o",5:"tag-r"};
-  return `<span class="tag ${cls[l]||'tag'}">${esc(LEVEL_LABELS[l]||"不明")}</span>`;
-}
-
-function miniBar(l){
-  return `<div class="mini-bar">${[1,2,3,4,5].map(i=>`<div class="mini-seg ${i<=l?'on-'+l:''}"></div>`).join("")}</div>`;
-}
-
-function updateStats(){
-  document.getElementById("stat-count").textContent = DB.length;
-}
-
-function renderCurrentTab(){
-  if(currentTab==="search") renderSearch();
-  else if(currentTab==="matrix") renderMatrix();
-  else if(currentTab==="list") renderList();
-}
-
-function switchTab(tab){
-  currentTab = tab;
-  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById("tab-"+tab).classList.add("active");
-  document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
-  const pane = document.getElementById("pane-"+tab);
-  if(pane) pane.classList.add("active");
-  document.getElementById("pane-detail").style.display="none";
-  renderCurrentTab();
-}
-
-function extractCostMax(str){
-  if(!str) return null;
-  const nums = str.match(/\d+/g);
-  if(!nums) return null;
-  const vals = nums.map(Number);
-  return Math.max(...vals);
-}
-
-function extractAreaMax(str){
-  if(!str) return null;
-  const nums = str.match(/[\d,]+/g);
-  if(!nums) return null;
-  const vals = nums.map(s=>parseInt(s.replace(/,/g,"")));
-  return Math.max(...vals);
-}
-
-function clearFilters(){
-  document.getElementById("sel-year").value="2028";
-  document.getElementById("sel-level").value="3";
-  document.getElementById("sel-cost").value="";
-  document.getElementById("sel-area").value="";
-  document.getElementById("sel-midsize").value="";
-  document.getElementById("sel-usage").value="";
-  renderSearch();
-}
-
-function renderSearch(){
-  const yr = parseInt(document.getElementById("sel-year").value);
-  const lv = parseInt(document.getElementById("sel-level").value);
-  const costMax = document.getElementById("sel-cost").value;
-  const areaMax = document.getElementById("sel-area").value;
-  const midsize = document.getElementById("sel-midsize").value;
-  const usageKw = document.getElementById("sel-usage").value.trim().toLowerCase();
-
-  let f = DB.filter(c=>{
-    // 繁忙度
-    if((c.繁忙度?.[yr]||5) > lv) return false;
-    // 中規模
-    if(midsize && c.中規模_相談可否 !== midsize) return false;
-    // 積極用途キーワード（用途・規模・金額・首都圏用途も含めて検索）
-    if(usageKw){
-      const kws = usageKw.split(/[、,\s]+/).filter(Boolean);
-      const target = [
-        c.積極受注_用途||"",
-        c.積極受注_規模||"",
-        c.積極受注_金額||"",
-        c.首都圏_多い用途||""
-      ].join(" ").toLowerCase();
-      if(!kws.some(k=>target.includes(k))) return false;
-    }
-    // 工事費規模（データ内の数値と比較）
-    if(costMax){
-      const maxVal = parseInt(costMax);
-      const cMax = extractCostMax(c.新築規模_工事費||"");
-      // データに数値があれば比較、なければ通過させる
-      if(cMax !== null && cMax > maxVal * 3) return false;
-    }
-    // 延床面積
-    if(areaMax){
-      const maxVal = parseInt(areaMax);
-      const aMax = extractAreaMax(c.新築規模_延床面積||"");
-      if(aMax !== null && aMax > maxVal * 3) return false;
-    }
-    return true;
-  });
-
-  // ラベル生成
-  const lvLabel = {1:"①受注前向き",2:"②余裕有以下",3:"③通常以下",4:"④繁忙以下",5:"全て"}[lv];
-  const parts = [`${yr}年度 / ${lvLabel}`];
-  if(costMax) parts.push(`工事費〜${costMax}億`);
-  if(areaMax) parts.push(`〜${parseInt(areaMax).toLocaleString()}㎡`);
-  if(midsize) parts.push("中規模◎");
-  if(usageKw) parts.push(`用途:${usageKw}`);
-  document.getElementById("result-label").textContent = parts.join(" ／ ");
-  document.getElementById("result-num").textContent = f.length;
-
-  const el = document.getElementById("result-list");
-  if(!f.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>条件に該当するゼネコンがありません。<br>条件を変えてみてください。</p></div>`;
-    return;
+    "会社名": "梅干し組株式会社",
+    "日付": "2026年2月5日（木）",
+    "新築受注可能_第一希望": "2027年春以降",
+    "新築規模_工事費": "70億円程度～",
+    "新築規模_延床面積": "10,000㎡程度～",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "分譲住宅、倉庫、工場",
+    "積極受注_用途": "非住宅（事務所、商業ビル、倉庫、工場、ホテルなど）",
+    "積極受注_規模": "10,000㎡程度～",
+    "積極受注_金額": "50億円～",
+    "消極受注_用途": "特になし",
+    "消極受注_規模": "〇0,000㎡程度",
+    "首都圏割合_売上額": "144,365百万円",
+    "首都圏割合_売上%": "0.515",
+    "首都圏割合_社員数": "782人",
+    "首都圏_新築改修割合": "新築工事83.6％：改修工事19.9％",
+    "発注_一括": "〇",
+    "設計施工一括_方針": "賃貸・分譲住宅は設計施工一括での発注をお願いしており、非住宅物件は設計施工一括or分離は問いません。",
+    "価格上昇_工種資材": "建築各工種労務費、建築部材全般に緩やかに上昇基調。突出して特定の工種が高騰していている状況はありません。設備はケーブル価格は上昇継続。消火設備、自動制御設備工事は労務逼迫が継続のため、価格が下がらない",
+    "納期難_材料製品": "・現状、特定の材料の納期が特に厳しいという状況はありません。設備は基本的には納期は通常納期に戻っている",
+    "物価上昇_変更契約": "・民間連合約款に準じた契約となる。工事期間中適時、3ヶ月に一度程度の頻度でコスト確認をお願いしたい",
+    "労務_逼迫状況": "・2027年以降社員は逼迫している。同様に協力会社も2027度以降は多忙と聞いている。設備は弊社技術社員は不足。設備サブコンの施工管理職員はそれ以上に逼迫している",
+    "逼迫工種": "・建築関係は全工種に渡り、設備は消火設備、自動制御設備",
+    "工期_変動見解": "・2024年労働時間の上限規制施行以降の着工物件とは大きな変動はないと思われるが労務不足、資機材納期が見通せない状況があるため注視が必要である",
+    "工期短縮_取組": "・相対案件の早期プロジェクト参画により施工会社としての知見を設計段階から取り入れること",
+    "設計監理_意見": "・特にありません",
+    "海外戦略": "・東南アジアおよび建築はインド、土木はアフリカまで進出。現状、施工体制は繁忙だが今後も海外売上比率は拡大する方針\r\n・海外製品使用は現状積極的には取り組んでいない"
+  },
+  {
+    "繁忙度": {
+      "2026": 5,
+      "2027": 4,
+      "2028": 2,
+      "2029": 1,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
+    },
+    "会社名": "株式会社おかか組",
+    "場所": "(本社)",
+    "新築受注可能_第一希望": "2027年12月以降",
+    "新築受注可能_第二希望": "2028年4月以降",
+    "新築規模_工事費": "50～300億円程度",
+    "新築規模_延床面積": "7,000～40,000㎡程度",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "物流倉庫、生産工場",
+    "積極受注_用途": "事務所ビル（中高層ビル）",
+    "積極受注_規模": "20,000㎡程度",
+    "積極受注_金額": "150～200億",
+    "消極受注_規模": "2,000㎡以下",
+    "消極受注_金額": "10億以下",
+    "首都圏割合_売上額": "1,500～1,800億",
+    "首都圏割合_売上%": "45%程度",
+    "首都圏割合_社員数": "250～300人(現場配置職員数)",
+    "首都圏_新築改修割合": "新築工事90％：改修工事10％",
+    "発注_一括": "〇",
+    "発注_分離": "〇",
+    "発注_コストオン": "〇",
+    "設計施工一括_方針": "特に拘りはございませんが、設計実績を積みたい案件では、基本設計または実施設計からの関与をお願いする場合がございます。",
+    "価格上昇_工種資材": "昨年12月12日改正建設業法が全面施行となり、『労務費に関する基準』遵守のため、今後労務は全工種上昇するおそれがあります。\r\n・改正建設業法(2025年12月施行)の影響もあり第1段階として労務費が上昇し始めている。\r\n(躯体及び労務系業種)\r\n建設資材物価指数の直近３ヶ月では、【非鉄金属】（銅・アルミニウム等）と【電線･ケーブル･光ファイバーケーブル】が約10％／3ヶ月　上昇しています。",
+    "納期難_材料製品": "照明器具LEDベースライト従来1か月以内が6か月程度、高圧変圧器8か月程度。",
+    "物価上昇_変更契約": "建設資材物価指数の【建設総合指数】の上昇率約4％／年、公共工事設計労務単価の全職種平均が令和5年、6年とも約6％上昇しています。急激な物価上昇時はもちろん、現状の物価上昇が続いた場合も契約変更協議をお願いしています。",
+    "労務_逼迫状況": "・元請社員は若干逼迫傾向。案件時期、技術系職員の山積で調整している。\r\n・協力会社、現場技能労働者はスポットで工種により若干の過不足はあるが特に問題なし。\r\n電気設備、機械設備協力会社は27/28年度大型工事は既に業務量過多により新規案件は確保が難しい状況です。",
+    "逼迫工種": "消火設備専門工事、自動制御専門会社は引き続き工事量過多による労務逼迫、工事費高騰しております。",
+    "工期_変動見解": "全ての案件において４週８閉所をベースに工期設定をしております。",
+    "工期短縮_取組": "設計段階から地下工事の検討を平行してすすめ計画の修正により工事の簡略化を図る。\r\nPC化の推進。",
+    "設計監理_意見": "-",
+    "海外戦略": "海外売上比率５％程度\r\n低コスト製品の積極採用（鉄骨、ガラス、金属製品など）"
+  },
+  {
+    "繁忙度": {
+      "2026": 4,
+      "2027": 4,
+      "2028": 2,
+      "2029": 1,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
+    },
+    "会社名": "株式会社ツナ建設",
+    "日付": "46066",
+    "場所": "(本社)",
+    "新築受注可能_第一希望": "2028年4月以降",
+    "新築規模_工事費": "50億円程度",
+    "新築規模_延床面積": "〇0,000㎡程度",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "ミッドサイズオフィス、タワーマンション、物流",
+    "積極受注_用途": "オフィス、冷凍冷蔵、DCなど",
+    "積極受注_規模": "〇0,000㎡程度",
+    "消極受注_規模": "〇0,000㎡程度",
+    "首都圏_新築改修割合": "新築工事ほぼ100％",
+    "発注_一括": "〇",
+    "発注_コストオン": "〇",
+    "設計施工一括_方針": "分離、一括とも対応可能です。",
+    "価格上昇_工種資材": "労務費、資材とも全般的に上昇傾向です。",
+    "納期難_材料製品": "エレベーター",
+    "物価上昇_変更契約": "物件ごとの状況に合わせてお願いをしています。",
+    "労務_逼迫状況": "山積みを丁寧に確認をしながら進めています。",
+    "逼迫工種": "消火設備、生コン、銅製品全般（冷媒、ケーブルなど）、サブコン",
+    "工期_変動見解": "4週8閉所に加え、祝日、長期休暇+夏場の作業効率低下を見込み以前に比べて工期は長くなる傾向にあると思います。",
+    "工期短縮_取組": "作業の効率化など"
+  },
+  {
+    "繁忙度": {
+      "2026": 5,
+      "2027": 5,
+      "2028": 4,
+      "2029": 3,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
+    },
+    "会社名": "鳥五目工業株式会社",
+    "日付": "46066",
+    "場所": "(本社)",
+    "新築受注可能_第一希望": "2029年4月以降(※マンション案件に限る)",
+    "新築受注可能_第二希望": "2028年4月以降（ホテル・事務所・物流施設）",
+    "新築規模_工事費": "①ﾏﾝｼｮﾝ・事務所・ホテル：20～80億円程度\r\n②物流施設(ﾄﾞﾗｲ・冷蔵):30～100億超もあり",
+    "新築規模_延床面積": "①3,000～5,000㎡\r\n②7,000～30,000㎡",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "分譲マンション、物流倉庫、防衛施設、PFI給食センター等",
+    "積極受注_用途": "事務所ビル・ホテル・Lab・分譲マンション",
+    "積極受注_規模": "3,000～5,000㎡程度",
+    "積極受注_金額": "20～50億程度",
+    "消極受注_用途": "用途は特になし",
+    "消極受注_規模": "10,000㎡程度",
+    "消極受注_金額": "100億以上",
+    "首都圏割合_売上額": "600億円（建築）",
+    "首都圏割合_売上%": "60%程度",
+    "首都圏割合_社員数": "連結2,052名(単独1,772名)",
+    "首都圏_新築改修割合": "新築工事90％：改修工事10％",
+    "発注_一括": "〇",
+    "発注_コストオン": "〇",
+    "設計施工一括_方針": "・物流施設については、構造設計から組み入れることでコスト競争力が見出せ、設計も工事も生産性が上がるため設計施工一括発注を希望（事務所ビル・ホテルも同様）\r\n・分譲マンションについては、設計の拘束期間が長く、施工難易度も上がる傾向の為、生産性が上がらないため、分離発注を希望。",
+    "価格上昇_工種資材": "全工種平均20％以上UP",
+    "納期難_材料製品": "・長尺塩ビシート、既製コンクリート杭、受変電設備、高圧・低圧ケーブル、中央監視設備、盤類、自動制御盤、空調機、ポンプ、冷凍冷蔵設備、乗用エレベーター、荷物用エレベーター等",
+    "物価上昇_変更契約": "定例時に物価上昇項目（金額含む）を随時お知らせし、積極的にVECD協議にて当初の事業予算に収めるべく協力を遂行している。但し、資材納期・施工段階次第では、VECD提案が間に合わず、個別に変更契約を申し入れる場合はある。直近の傾向として、変更数量や実勢単価の早期共有により、概ね物価上昇・追加工事の協議は対応いただけている。",
+    "労務_逼迫状況": "・協力会社の労務状況は注視が続く（小中規模のRC造であれば比較的労務確保は可能。大規模案件は要注意）特に、サブコンの労務確保は喫緊の課題。",
+    "逼迫工種": "・左官工、断熱発砲ウレタン工の労務は逼迫。各工種平均20UP。",
+    "工期_変動見解": "・業界団体から働き方・処遇改善要請に沿い、ゼネコンのみならず協力会社一体となって4週8閉所の取り組み、\r\n生コン打設時間の制限など、現場での影響は大きい。上棟から引渡しまで7ヶ月確保する方針有。検査工程においても事業主と協議が必要。",
+    "工期短縮_取組": "・工期短縮のインパクトのある取り組みは薄い。現場ごとに創意工夫の積み上げに拠るところを期待。",
+    "設計監理_意見": "貴社というよりは、昨今の傾向として、内示をいただいてから施工中においても、原価の推移は注視しているものの、労務事情・経済条件が合わず、コストコントロールが効かない事態は散見される。また、追加変更、VECDに対応する見積・現場対応が間に合わないケースが発生している現状がある。設計においては、デザイン・品質優先でコスト情報が後追いになる。コスト管理が施工者側任せになりがちなど",
+    "海外戦略": "・特に物流施設においては、調達・コストの見合いで、外装パネルを国内から海外製品に代替するなど案件ごとに検証している。各工種海外技能者労働者がいないと回らない実情がある。"
+  },
+  {
+    "繁忙度": {
+      "2026": 4,
+      "2027": 4,
+      "2028": 1,
+      "2029": 1,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
+    },
+    "会社名": "株式会社　昆布工務店",
+    "日付": "46058",
+    "場所": "(本社)",
+    "新築受注可能_第一希望": "2028年4月以降",
+    "新築受注可能_第二希望": "2028年1月以降",
+    "新築規模_工事費": "20～80億円程度",
+    "新築規模_延床面積": "5,000～20,000㎡程度",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "物流、工場、オフィス、ホテル、マンション",
+    "積極受注_用途": "物流、工場、オフィス、ホテル",
+    "積極受注_規模": "5,000～10,000㎡程度",
+    "積極受注_金額": "30～80億円程度",
+    "消極受注_用途": "マンション",
+    "消極受注_規模": "3,000㎡以下、20,000㎡以上程度",
+    "消極受注_金額": "20億円以下、100億円以上程度",
+    "首都圏割合_売上額": "約769億円（内建築約87％）",
+    "首都圏割合_売上%": "0.496",
+    "首都圏割合_社員数": "1796名",
+    "首都圏_新築改修割合": "新築工事約85％：改修工事約15％",
+    "発注_一括": "〇",
+    "発注_分離": "〇",
+    "発注_コストオン": "〇",
+    "設計施工一括_方針": "案件の内容、設計の時期、施工の時期、弊社の既予定次第になります。",
+    "価格上昇_工種資材": "特に設備サブコンと一部の仕上げ資材で上昇及び今後の上昇予定が見受けられます。",
+    "納期難_材料製品": "以前に比べ、概ね改善してきています。",
+    "物価上昇_変更契約": "近年は物価上昇が大きかったため、多くの発注者様にご協議いただいています。",
+    "労務_逼迫状況": "弊社、サブコン共に現場代理人が特に不足しています。",
+    "逼迫工種": "設備全般。特に電気工事関係が高騰しています。",
+    "工期_変動見解": "長時間労働の規制が厳格化してきていること、専門工事業者の労務確保のため、短工期物件の対応が困難になっています。また、その他の労務事情も時期により変動があり、更に大阪のIRや超大型工事に労務が取られるため、遅延リスクが高まっていると考えます。",
+    "工期短縮_取組": "目新しい取り組みはございません。",
+    "設計監理_意見": "高品質な施工を求められた場合、時間と労務、コストが必要となります。また、予めの要求度の明確化、状況に応じた柔軟な対応が必要になってきていると感じています。",
+    "海外戦略": "海外技能労働者は多くなってきています。"
+  },
+  {
+    "会社名": "お味噌汁建設",
+    "日付": "2026年2月5日（木）",
+    "繁忙度": {
+      "2026": 1,
+      "2027": 1,
+      "2028": 1,
+      "2029": 1,
+      "2030": 1,
+      "2031": 1,
+      "2032": 1
+    },
+    "新築受注可能_第一希望": "2027年春以降",
+    "新築受注可能_第二希望": null,
+    "新築規模_工事費": "70億円程度～",
+    "新築規模_延床面積": "10,000㎡程度～",
+    "中規模_相談可否": "可能",
+    "首都圏_多い用途": "分譲住宅、倉庫、工場",
+    "積極受注_用途": "非住宅（事務所、商業ビル、倉庫、工場など）",
+    "積極受注_規模": "10,000㎡程度～",
+    "積極受注_金額": "50億円～",
+    "消極受注_用途": "特になし",
+    "消極受注_規模": "〇0,000㎡程度",
+    "消極受注_金額": null,
+    "首都圏割合_売上額": "115,218百万円",
+    "首都圏割合_社員数": "540人",
+    "首都圏_新築改修割合": "新築工事86.6％：改修工事13.4％",
+    "設計施工一括_方針": "賃貸・分譲住宅は設計施工一括での発注をお願いしており、非住宅物件は設計施工一括or分離は問いません。",
+    "価格上昇_工種資材": "建築各工種労務費、建築部材全般に緩やかに上昇基調。突出して特定の工種が高騰していている状況はありません。設備はケーブル価格は上昇継続。消火設備、自動制御設備工事は労務逼迫が継続のため、価格が下がらない",
+    "納期難_材料製品": "・現状、特定の材料の納期が特に厳しいという状況はありません。設備は基本的には納期は通常納期に戻っている",
+    "物価上昇_変更契約": "・民間連合約款に準じた契約となる。工事期間中適時、3ヶ月に一度程度の頻度でコスト確認をお願いしたい",
+    "労務_逼迫状況": "・2027年以降社員は逼迫している。同様に協力会社も2027度以降は多忙と聞いている。設備は弊社技術社員は不足。設備サブコンの施工管理職員はそれ以上に逼迫している",
+    "逼迫工種": "・建築関係は全工種に渡り、設備は消火設備、自動制御設備",
+    "工期_変動見解": "・2024年労働時間の上限規制施行以降の着工物件とは大きな変動はないと思われるが労務不足、資機材納期が見通せない状況があるため注視が必要である",
+    "工期短縮_取組": "・相対案件の早期プロジェクト参画により施工会社としての知見を設計段階から取り入れること",
+    "設計監理_意見": "・特にありません",
+    "海外戦略": "・東南アジアおよび建築はインド、土木はアフリカまで進出。現状、施工体制は繁忙だが今後も海外売上比率は拡大する方針\r\n・海外製品使用は現状積極的には取り組んでいない",
+    "自由記載": null
   }
-  el.innerHTML = f.map(c=>{
-    const l = c.繁忙度?.[yr]||5;
-    const idx = DB.findIndex(d=>d.会社名===c.会社名);
-    return `<div class="card">
-      <div class="card-top">
-        <div>
-          <div class="card-name">${esc(c.会社名)}</div>
-        </div>
-        <div class="card-acts">
-          <div style="text-align:right;margin-right:4px">
-            <div class="card-year">${yr}年度</div>
-            ${miniBar(l)}
-          </div>
-          <button class="btn-icon" onclick="showDetail('${esc(c.会社名)}','search')">詳細 →</button>
-          <button class="btn-icon btn-edit" onclick="switchTab('list');setTimeout(()=>startEdit(${idx}),80)">✏️</button>
-          <button class="btn-icon btn-del" onclick="deleteCompany(${idx})">🗑</button>
-        </div>
-      </div>
-      <div class="card-tags">
-        ${levelBadge(l)}
-        <span class="tag">着工 ${esc(c.新築受注可能_第一希望||"要確認")}</span>
-        ${c.中規模_相談可否==="可能"?`<span class="tag tag-g">中規模 ◎</span>`:""}
-      </div>
-      <div class="card-info">規模：${esc(c.新築規模_工事費)} ／ ${esc(c.新築規模_延床面積)}<br>積極用途：${esc(c.積極受注_用途)}</div>
-    </div>`;
-  }).join("");
-}
-
-function renderMatrix(){
-  const el = document.getElementById("matrix-container");
-  if(!DB.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><p>データがありません。</p></div>`; return; }
-  const cellClass={1:"cell-1",2:"cell-2",3:"cell-3",4:"cell-4",5:"cell-5"};
-  const shortLabels={1:"①前向",2:"②余裕",3:"③通常",4:"④繁忙",5:"⑤不可"};
-  el.innerHTML=`<div class="matrix-wrap"><table class="matrix">
-    <thead><tr><th>会社名</th>${YEARS.map(y=>`<th>${y}</th>`).join("")}</tr></thead>
-    <tbody>${DB.map(c=>`<tr>
-      <td class="company-cell" style="cursor:pointer" onclick="showDetail('${esc(c.会社名)}','matrix')">${esc(c.会社名)}</td>
-      ${YEARS.map(y=>{ const l=c.繁忙度?.[y]||5; return `<td class="${cellClass[l]||''}">${shortLabels[l]||l}</td>`; }).join("")}
-    </tr>`).join("")}</tbody>
-  </table></div>`;
-}
-
-function renderList(){
-  const el = document.getElementById("list-container");
-  if(!DB.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><p>データがありません。<br>「📥 インポート」からExcelを読み込んでください。</p></div>`; return; }
-  el.innerHTML = DB.map((c,idx)=>`
-    <div class="card" id="card-${idx}">
-      <div class="card-top">
-        <div class="card-name">${esc(c.会社名)}</div>
-        <div class="card-acts">
-          <button class="btn-icon" onclick="showDetail('${esc(c.会社名)}','list')">詳細 →</button>
-          <button class="btn-icon btn-edit" onclick="startEdit(${idx})">✏️ 編集</button>
-          <button class="btn-icon btn-del" onclick="deleteCompany(${idx})">🗑 削除</button>
-        </div>
-      </div>
-      <div class="card-tags">
-        ${YEARS.map(y=>{ const l=c.繁忙度?.[y]||5; return `<span class="tag" style="font-size:10px">${y}: ${LEVEL_LABELS[l]||l}</span>`; }).join("")}
-      </div>
-      <div class="card-info">着工：${esc(c.新築受注可能_第一希望)} ／ 規模：${esc(c.新築規模_工事費)}</div>
-    </div>`).join("");
-}
-
-/* ════════════════════════════════════════
-   DETAIL
-════════════════════════════════════════ */
-function showDetail(name, from){
-  detailPrev = from || currentTab;
-  const c = DB.find(d=>d.会社名===name); if(!c) return;
-  const idx = DB.findIndex(d=>d.会社名===name);
-  const cellClass={1:"cell-1",2:"cell-2",3:"cell-3",4:"cell-4",5:"cell-5"};
-
-  document.querySelectorAll(".pane").forEach(p=>p.classList.remove("active"));
-  const det = document.getElementById("pane-detail");
-  det.style.display="block";
-
-  det.innerHTML=`
-  <div style="max-width:900px;margin:0 auto;padding:20px">
-    <div class="detail-head">
-      <div>
-        <div class="detail-name">${esc(c.会社名)}</div>
-        ${c.日付?`<div class="detail-date">ヒアリング日：${esc(c.日付)}</div>`:""}
-      </div>
-      <div class="detail-acts">
-        <button class="btn-icon btn-edit" onclick="switchTab('list');setTimeout(()=>startEdit(${idx}),80)">✏️ 編集</button>
-        <button class="btn-icon btn-del" onclick="deleteCompany(${idx})">🗑 削除</button>
-        <button class="btn" onclick="backFromDetail()">← 戻る</button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">年度別 繁忙度</div>
-      <div class="year-grid">
-        ${YEARS.map(y=>{const l=c.繁忙度?.[y]||5;return `<div class="year-cell ${cellClass[l]||''}">
-          <div class="yr">${y}</div>
-          <div class="lv">${LEVEL_LABELS[l]||l}</div>
-        </div>`;}).join("")}
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">受注情報</div>
-      <div class="info-grid">
-        <div class="info-item"><label>着工希望（第一）</label><p>${esc(c.新築受注可能_第一希望)}</p></div>
-        <div class="info-item"><label>着工希望（第二）</label><p>${esc(c.新築受注可能_第二希望)}</p></div>
-        <div class="info-item"><label>工事費規模</label><p>${esc(c.新築規模_工事費)}</p></div>
-        <div class="info-item"><label>延床面積規模</label><p>${esc(c.新築規模_延床面積)}</p></div>
-        <div class="info-item"><label>中規模相談</label><p>${esc(c.中規模_相談可否)}</p></div>
-        <div class="info-item"><label>首都圏の多い用途</label><p>${esc(c.首都圏_多い用途)}</p></div>
-        <div class="info-item full"><label>積極受注</label><p>${esc(c.積極受注_用途)}</p></div>
-        <div class="info-item full"><label>消極受注</label><p>${esc(c.消極受注_用途)}</p></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">労務・工期状況</div>
-      <div class="info-grid">
-        <div class="info-item full"><label>労務逼迫状況</label><p>${esc(c.労務_逼迫状況)}</p></div>
-        <div class="info-item full"><label>逼迫工種</label><p>${esc(c.逼迫工種)}</p></div>
-        <div class="info-item full"><label>工期変動見解</label><p>${esc(c.工期_変動見解)}</p></div>
-        <div class="info-item full"><label>工期短縮取組</label><p>${esc(c.工期短縮_取組)}</p></div>
-      </div>
-    </div>
-
-    ${c.海外戦略||c.自由記載?`<div class="section">
-      <div class="section-title">その他</div>
-      <div class="info-grid">
-        ${c.海外戦略?`<div class="info-item full"><label>海外戦略</label><p>${esc(c.海外戦略)}</p></div>`:""}
-        ${c.自由記載?`<div class="info-item full"><label>自由記載</label><p>${esc(c.自由記載)}</p></div>`:""}
-      </div>
-    </div>`:""}
-  </div>`;
-}
-
-function backFromDetail(){
-  document.getElementById("pane-detail").style.display="none";
-  switchTab(detailPrev||"search");
-}
-
-/* ════════════════════════════════════════
-   EDIT
-════════════════════════════════════════ */
-function startEdit(idx){
-  const c = DB[idx]; if(!c) return;
-  const el = document.getElementById("card-"+idx);
-  if(!el){ renderList(); setTimeout(()=>startEdit(idx),80); return; }
-  const fields=[
-    {k:"会社名",l:"会社名",full:false},
-    {k:"日付",l:"ヒアリング日",full:false},
-    {k:"新築受注可能_第一希望",l:"着工希望（第一）",full:false},
-    {k:"新築受注可能_第二希望",l:"着工希望（第二）",full:false},
-    {k:"新築規模_工事費",l:"工事費規模",full:false},
-    {k:"新築規模_延床面積",l:"延床面積規模",full:false},
-    {k:"中規模_相談可否",l:"中規模相談（可能/要相談/不可）",full:false},
-    {k:"積極受注_用途",l:"積極受注用途",full:true},
-    {k:"消極受注_用途",l:"消極受注用途",full:true},
-    {k:"労務_逼迫状況",l:"労務逼迫状況",full:true},
-    {k:"逼迫工種",l:"逼迫工種",full:true},
-    {k:"工期_変動見解",l:"工期変動見解",full:true},
-    {k:"海外戦略",l:"海外戦略",full:true},
-    {k:"自由記載",l:"自由記載",full:true},
-  ];
-  const yearOpts=Object.entries(LEVEL_LABELS).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
-
-  el.outerHTML=`
-  <div class="edit-wrap" id="edit-${idx}">
-    <div class="edit-title">
-      <span>✏️ 編集：${esc(c.会社名)}</span>
-      <button class="btn-icon btn-del" onclick="cancelEdit(${idx})">✕ キャンセル</button>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">年度別 繁忙度</div>
-    <div class="edit-year-grid" style="margin-bottom:16px">
-      ${YEARS.map(y=>`<div class="edit-year-cell">
-        <label>${y}</label>
-        <select id="edit-yr-${idx}-${y}">${yearOpts.replace(`value="${c.繁忙度?.[y]||3}"`,`value="${c.繁忙度?.[y]||3}" selected`)}</select>
-      </div>`).join("")}
-    </div>
-    <div class="edit-grid">
-      ${fields.map(f=>`<div class="edit-field ${f.full?'full':''}">
-        <label>${f.l}</label>
-        ${f.l.includes("見解")||f.l.includes("状況")||f.l.includes("取組")||f.l.includes("戦略")||f.l.includes("記載")||f.l.includes("用途")?
-          `<textarea id="edit-f-${idx}-${f.k}">${esc(c[f.k]||"")}</textarea>`:
-          `<input type="text" id="edit-f-${idx}-${f.k}" value="${esc(c[f.k]||"")}">`
-        }
-      </div>`).join("")}
-    </div>
-    <div class="edit-acts">
-      <button class="btn btn-primary" onclick="saveEdit(${idx})">✓ 保存</button>
-    </div>
-  </div>`;
-}
-
-function saveEdit(idx){
-  const c = DB[idx]; if(!c) return;
-  const fields=["会社名","日付","新築受注可能_第一希望","新築受注可能_第二希望",
-    "新築規模_工事費","新築規模_延床面積","中規模_相談可否","積極受注_用途",
-    "消極受注_用途","労務_逼迫状況","逼迫工種","工期_変動見解","海外戦略","自由記載"];
-  fields.forEach(k=>{
-    const el=document.getElementById(`edit-f-${idx}-${k}`);
-    if(el) c[k]=el.value.trim()||null;
-  });
-  YEARS.forEach(y=>{
-    const el=document.getElementById(`edit-yr-${idx}-${y}`);
-    if(el) c.繁忙度[y]=parseInt(el.value)||3;
-  });
-  DB[idx]=c; saveLocal();
-  notify(`「${c.会社名}」を更新しました — 「💾 書き出し」でGitHubに反映してください`,"ok",7000);
-  renderList();
-}
-
-function cancelEdit(idx){ renderList(); }
-
-/* ════════════════════════════════════════
-   DELETE
-════════════════════════════════════════ */
-function deleteCompany(idx){
-  const name=DB[idx]?.会社名; if(!name) return false;
-  if(!confirm(`「${name}」を削除しますか？\nこの操作は元に戻せません。`)) return false;
-  DB.splice(idx,1); saveLocal();
-  notify(`「${name}」を削除しました — 「💾 書き出し」でGitHubに反映してください`,"ok",7000);
-  if(document.getElementById("pane-detail").style.display!=="none") backFromDetail();
-  else renderCurrentTab();
-  updateStats();
-  return true;
-}
-
-function resetAll(){
-  if(!confirm("全データを削除して空の状態にリセットしますか？\nこの操作は元に戻せません。")) return;
-  DB=[]; saveLocal(); notify("全データを削除しました","info");
-  renderCurrentTab(); updateStats();
-}
-
-/* ════════════════════════════════════════
-   MODAL / LOADING / NOTIFY
-════════════════════════════════════════ */
-function openModal(id){ document.getElementById(id).style.display="flex"; }
-function closeModal(id){ document.getElementById(id).style.display="none"; }
-function showLoading(){ document.getElementById("loading").classList.add("show"); }
-function hideLoading(){ document.getElementById("loading").classList.remove("show"); }
-
-function notify(msg, type="info", dur=4000){
-  const wrap=document.getElementById("notify-wrap");
-  const el=document.createElement("div");
-  el.className="notify "+(type||"info");
-  el.textContent=msg;
-  wrap.appendChild(el);
-  setTimeout(()=>{ el.style.opacity="0"; el.style.transition="opacity .3s"; setTimeout(()=>el.remove(),300); },dur);
-}
-
-/* ════════════════════════════════════════
-   INIT
-════════════════════════════════════════ */
-(function init(){
-  // password
-  if(sessionStorage.getItem(SS_AUTH)==="1"){
-    document.getElementById("pw-screen").style.display="none";
-  } else {
-    setTimeout(()=>document.getElementById("pw-input").focus(),100);
-  }
-
-  loadLocal();
-  updateStats();
-  renderSearch();
-
-  // sync
-  const url = getUrl();
-  if(url){
-    setSyncUI("loading");
-    syncFromGitHub(true);
-  } else {
-    setSyncUI("local");
-  }
-})();
-</script>
-</body>
-</html>
+]
